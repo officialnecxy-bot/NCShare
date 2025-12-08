@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>NCX Drop | P2P Secure</title>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        /* --- THEME: DEEP SPACE RED GLASS --- */
+        :root {
+            --bg: #030005;
+            --primary: #ff003c;
+            --primary-dim: rgba(255, 0, 60, 0.2);
+            --glass: rgba(20, 20, 20, 0.6);
+            --glass-border: 1px solid rgba(255, 255, 255, 0.08);
+            --text: #fff;
+            --text-muted: #888;
+            --radius: 24px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-tap-highlight-color: transparent; }
+        
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            height: 100vh;
+            display: flex; justify-content: center; align-items: center;
+            overflow: hidden;
+        }
+
+        /* Ambient Background Animation */
+        .orb {
+            position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.4;
+            animation: float 10s infinite ease-in-out;
+        }
+        .orb-1 { width: 300px; height: 300px; background: var(--primary); top: -100px; left: -100px; }
+        .orb-2 { width: 400px; height: 400px; background: #4a0012; bottom: -100px; right: -100px; animation-delay: -5s; }
+        @keyframes float { 0%,100%{transform:translate(0,0)} 50%{transform:translate(30px,50px)} }
+
+        /* --- APP CONTAINER --- */
+        #app {
+            width: 100%; max-width: 480px; height: 90vh; max-height: 850px;
+            background: var(--glass);
+            backdrop-filter: blur(40px); -webkit-backdrop-filter: blur(40px);
+            border: var(--glass-border);
+            border-radius: var(--radius);
+            position: relative; z-index: 10;
+            display: flex; flex-direction: column;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            overflow: hidden;
+        }
+
+        /* --- HEADER --- */
+        header {
+            padding: 25px; display: flex; justify-content: space-between; align-items: center;
+            border-bottom: var(--glass-border);
+        }
+        .logo { font-size: 1.5rem; font-weight: 700; letter-spacing: -1px; }
+        .logo span { color: var(--primary); }
+        .status { font-size: 0.8rem; padding: 5px 12px; border-radius: 20px; background: rgba(255,255,255,0.05); display: flex; align-items: center; gap: 6px; }
+        .dot { width: 8px; height: 8px; border-radius: 50%; background: #666; transition: 0.3s; }
+        .dot.active { background: #00ff88; box-shadow: 0 0 10px #00ff88; }
+
+        /* --- SCREENS --- */
+        .screen { flex: 1; padding: 25px; display: flex; flex-direction: column; opacity: 0; pointer-events: none; position: absolute; inset: 0; top: 80px; transition: 0.4s; }
+        .screen.active { opacity: 1; pointer-events: all; transform: scale(1); }
+
+        /* --- UI ELEMENTS --- */
+        h2 { font-size: 2rem; margin-bottom: 10px; line-height: 1.1; }
+        p { color: var(--text-muted); font-size: 0.95rem; margin-bottom: 30px; line-height: 1.5; }
+
+        .card {
+            background: rgba(255,255,255,0.03); border: var(--glass-border);
+            padding: 20px; border-radius: 16px; margin-bottom: 20px;
+            text-align: center; position: relative; overflow: hidden;
+        }
+
+        .id-display {
+            font-family: monospace; font-size: 1.2rem; color: var(--primary);
+            background: rgba(0,0,0,0.3); padding: 15px; border-radius: 10px;
+            margin-bottom: 15px; letter-spacing: 1px; border: 1px dashed var(--primary);
+        }
+
+        input {
+            width: 100%; background: rgba(0,0,0,0.3); border: var(--glass-border);
+            padding: 15px; border-radius: 12px; color: white; font-family: inherit; font-size: 1rem;
+            margin-bottom: 15px; transition: 0.3s;
+        }
+        input:focus { border-color: var(--primary); outline: none; }
+
+        button {
+            width: 100%; padding: 15px; border-radius: 50px; border: none; font-weight: 600; font-size: 1rem;
+            cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 10px;
+        }
+        .btn-primary { background: var(--primary); color: white; box-shadow: 0 10px 30px var(--primary-dim); }
+        .btn-primary:active { transform: scale(0.97); }
+        .btn-glass { background: rgba(255,255,255,0.05); color: white; border: var(--glass-border); margin-top: 10px; }
+        .btn-glass:hover { background: rgba(255,255,255,0.1); }
+
+        /* --- DROP ZONE --- */
+        .drop-zone {
+            flex: 1; border: 2px dashed rgba(255,255,255,0.1); border-radius: 20px;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            transition: 0.3s; cursor: pointer; position: relative;
+        }
+        .drop-zone:hover, .drop-zone.dragover { border-color: var(--primary); background: var(--primary-dim); }
+        .drop-icon { font-size: 4rem; color: var(--primary); margin-bottom: 20px; animation: bounce 2s infinite; }
+        @keyframes bounce { 0%, 100% {transform:translateY(0)} 50% {transform:translateY(-10px)} }
+
+        /* --- TRANSFERS --- */
+        #transfer-list { margin-top: 20px; max-height: 200px; overflow-y: auto; }
+        .file-card {
+            background: rgba(255,255,255,0.05); border-radius: 12px; padding: 15px;
+            margin-bottom: 10px; display: flex; align-items: center; gap: 15px;
+        }
+        .file-icon { font-size: 1.5rem; color: var(--primary); }
+        .file-info { flex: 1; overflow: hidden; }
+        .file-name { font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .file-meta { font-size: 0.7rem; color: #888; display: flex; justify-content: space-between; margin-top: 5px; }
+        
+        .progress-bar { height: 4px; background: #333; border-radius: 2px; margin-top: 8px; overflow: hidden; }
+        .progress-fill { height: 100%; background: var(--primary); width: 0%; transition: 0.2s; }
+
+        /* --- CONNECTION ANIMATION --- */
+        .radar {
+            width: 150px; height: 150px; border-radius: 50%;
+            border: 2px solid var(--primary);
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%); opacity: 0;
+        }
+        .connecting .radar { animation: ripple 1.5s infinite; opacity: 1; }
+        @keyframes ripple { 0%{width:0;height:0;opacity:1} 100%{width:300px;height:300px;opacity:0} }
+
+        #toast {
+            position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(100px);
+            background: #222; border: 1px solid var(--primary); color: white;
+            padding: 12px 25px; border-radius: 50px; font-size: 0.9rem;
+            transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); opacity: 0; pointer-events: none; z-index: 100;
+        }
+        #toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+    </style>
+</head>
+<body>
+
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+
+<div id="app">
+    <header>
+        <div class="logo">NCX <span>Drop</span></div>
+        <div class="status"><div class="dot" id="net-dot"></div> <span id="net-stat">Offline</span></div>
+    </header>
+
+    <div id="screen-home" class="screen active">
+        <h2>Your Identity</h2>
+        <p>Share this ID or Link with your friend to establish a secure tunnel.</p>
+        
+        <div class="card">
+            <div style="font-size:0.8rem; color:#888; margin-bottom:5px;">YOUR UNIQUE ID</div>
+            <div class="id-display" id="my-id">Generating...</div>
+            <button class="btn-primary" onclick="copyId()"><i class="fa-solid fa-copy"></i> Copy ID</button>
+            <button class="btn-glass" onclick="shareLink()"><i class="fa-solid fa-share-nodes"></i> Share Link</button>
+        </div>
+
+        <div style="text-align: center; margin: 20px 0; font-size: 0.9rem; color: #666;">- OR -</div>
+
+        <button class="btn-glass" onclick="ui.go('connect')" style="background: rgba(255,255,255,0.03);">
+            <i class="fa-solid fa-plug"></i> Connect to Friend
+        </button>
+    </div>
+
+    <div id="screen-connect" class="screen">
+        <button onclick="ui.go('home')" style="width:auto; background:none; padding:0; margin-bottom:20px; color:#888;"><i class="fa-solid fa-arrow-left"></i> Back</button>
+        <h2>Connect</h2>
+        <p>Enter your friend's ID to start the pipe.</p>
+        
+        <div class="card" style="padding: 40px 20px;">
+            <div class="radar"></div>
+            <input type="text" id="remote-id" placeholder="Paste ID here (e.g. ncx-...)">
+            <button class="btn-primary" id="btn-conn" onclick="connectToPeer()"><i class="fa-solid fa-bolt"></i> Connect</button>
+        </div>
+    </div>
+
+    <div id="screen-transfer" class="screen">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <h2 style="font-size:1.5rem; margin:0;">Secure Tunnel</h2>
+            <button onclick="disconnect()" style="width:auto; font-size:0.8rem; padding:8px 15px; background:#333; color:#ff4444;"><i class="fa-solid fa-power-off"></i> End</button>
+        </div>
+        <p id="peer-name" style="margin-bottom:20px;">Connected to Unknown</p>
+
+        <div class="drop-zone" id="drop-zone" onclick="document.getElementById('file-in').click()">
+            <i class="fa-solid fa-cloud-arrow-up drop-icon"></i>
+            <h3>Tap to Send</h3>
+            <p style="margin-bottom:0; font-size:0.8rem;">or Drag & Drop files here</p>
+            <input type="file" id="file-in" style="display:none" multiple onchange="handleFiles(this.files)">
+        </div>
+
+        <div id="transfer-list"></div>
+    </div>
+
+    <div id="toast">Copied!</div>
+</div>
+
+<script>
+    // --- APP STATE ---
+    let peer, conn;
+    const myName = "User-" + Math.floor(Math.random() * 1000); // Simple random name for demo
+    
+    // --- UI CONTROLLER ---
+    const ui = {
+        go: (id) => {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById('screen-' + id).classList.add('active');
+        },
+        toast: (msg) => {
+            const t = document.getElementById('toast');
+            t.innerText = msg;
+            t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 3000);
+        },
+        status: (online) => {
+            const d = document.getElementById('net-dot');
+            const t = document.getElementById('net-stat');
+            if(online) { d.classList.add('active'); t.innerText = "Online"; t.style.color = "#00ff88"; }
+            else { d.classList.remove('active'); t.innerText = "Offline"; t.style.color = "#666"; }
+        }
+    };
+
+    // --- PEER JS INIT ---
+    // Using PeerJS cloud server (free)
+    function initPeer() {
+        const customId = 'ncx-' + Math.random().toString(36).substr(2, 5); // Short ID
+        peer = new Peer(customId);
+
+        peer.on('open', (id) => {
+            document.getElementById('my-id').innerText = id;
+            ui.status(true);
+            
+            // Check URL for auto-connect
+            const urlParams = new URLSearchParams(window.location.search);
+            const connectTo = urlParams.get('connect');
+            if(connectTo) {
+                document.getElementById('remote-id').value = connectTo;
+                ui.go('connect');
+                setTimeout(() => connectToPeer(), 1000); // Small delay to ensure init
+            }
+        });
+
+        peer.on('connection', (c) => {
+            conn = c;
+            setupConnection();
+        });
+
+        peer.on('error', (err) => {
+            ui.toast("Error: " + err.type);
+            console.error(err);
+        });
+    }
+
+    // --- CONNECTION LOGIC ---
+    function connectToPeer() {
+        const id = document.getElementById('remote-id').value.trim();
+        if(!id) return ui.toast("Enter an ID");
+        
+        const btn = document.getElementById('btn-conn');
+        btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> Connecting...`;
+        document.querySelector('.card').classList.add('connecting');
+
+        conn = peer.connect(id);
+        
+        conn.on('open', () => {
+            btn.innerHTML = `<i class="fa-solid fa-bolt"></i> Connect`;
+            document.querySelector('.card').classList.remove('connecting');
+            setupConnection();
+        });
+        
+        conn.on('error', () => {
+            btn.innerHTML = `<i class="fa-solid fa-bolt"></i> Connect`;
+            ui.toast("Connection Failed");
+        });
+    }
+
+    function setupConnection() {
+        ui.go('transfer');
+        document.getElementById('peer-name').innerText = `Connected to ${conn.peer}`;
+        
+        // Receive Data
+        conn.on('data', (data) => {
+            if(data.type === 'info') {
+                createReceivingCard(data.id, data.name, data.size);
+            } else if (data.type === 'chunk') {
+                updateProgress(data.id, data.percent);
+            } else if (data.type === 'file') {
+                // File received complete (Blob)
+                finishReceive(data.id, data.file, data.name);
+            }
+        });
+
+        conn.on('close', () => {
+            ui.toast("Peer Disconnected");
+            disconnect();
+        });
+    }
+
+    function disconnect() {
+        if(conn) conn.close();
+        conn = null;
+        ui.go('home');
+        document.getElementById('transfer-list').innerHTML = '';
+        // Clean URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+
+    // --- FILE TRANSFER LOGIC ---
+    function handleFiles(files) {
+        if(!conn) return ui.toast("Not connected!");
+        
+        Array.from(files).forEach(file => {
+            const fileId = Math.random().toString(36).substr(2, 9);
+            createSendingCard(fileId, file.name, file.size);
+            
+            // Send Metadata
+            conn.send({ type: 'info', id: fileId, name: file.name, size: file.size });
+
+            // Send File (Using PeerJS's auto-binary handling for simplicity in demo)
+            // Ideally we chunk this for progress bars, here we simulate progress for UI
+            // because PeerJS abstracts the stream in simple mode.
+            
+            // Visual Simulation of Progress (since PeerJS simple send doesn't give events)
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += 10;
+                updateProgress(fileId, progress);
+                conn.send({ type: 'chunk', id: fileId, percent: progress }); // Tell receiver to update UI
+                if(progress >= 100) {
+                    clearInterval(interval);
+                    // Actually send the file blob now
+                    const blob = new Blob([file], {type: file.type});
+                    conn.send({ type: 'file', id: fileId, file: blob, name: file.name });
+                }
+            }, 50); // Speed simulation
+        });
+    }
+
+    // --- UI HELPERS FOR FILES ---
+    function formatSize(bytes) {
+        if(bytes === 0) return '0 B';
+        const k = 1024;
+        const sizes = ['B', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    function createSendingCard(id, name, size) {
+        const html = `
+            <div class="file-card" id="file-${id}">
+                <div class="file-icon"><i class="fa-solid fa-file-export"></i></div>
+                <div class="file-info">
+                    <div class="file-name">${name}</div>
+                    <div class="file-meta">
+                        <span>${formatSize(size)}</span>
+                        <span class="status-txt">Sending...</span>
+                    </div>
+                    <div class="progress-bar"><div class="progress-fill" style="width:0%"></div></div>
+                </div>
+            </div>`;
+        document.getElementById('transfer-list').innerHTML += html;
+    }
+
+    function createReceivingCard(id, name, size) {
+        const html = `
+            <div class="file-card" id="file-${id}">
+                <div class="file-icon"><i class="fa-solid fa-file-import"></i></div>
+                <div class="file-info">
+                    <div class="file-name">${name}</div>
+                    <div class="file-meta">
+                        <span>${formatSize(size)}</span>
+                        <span class="status-txt">Receiving...</span>
+                    </div>
+                    <div class="progress-bar"><div class="progress-fill" style="width:0%"></div></div>
+                </div>
+            </div>`;
+        document.getElementById('transfer-list').innerHTML += html;
+    }
+
+    function updateProgress(id, percent) {
+        const el = document.getElementById(`file-${id}`);
+        if(el) {
+            el.querySelector('.progress-fill').style.width = percent + '%';
+        }
+    }
+
+    function finishReceive(id, blob, name) {
+        const el = document.getElementById(`file-${id}`);
+        if(el) {
+            el.querySelector('.status-txt').innerHTML = `<span style="color:#00ff88">Completed</span>`;
+            el.querySelector('.progress-fill').style.background = '#00ff88';
+            
+            // Auto download
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = name;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+    }
+
+    // --- CLIPBOARD ---
+    window.copyId = () => {
+        const id = document.getElementById('my-id').innerText;
+        navigator.clipboard.writeText(id);
+        ui.toast("ID Copied!");
+    }
+
+    window.shareLink = () => {
+        const id = document.getElementById('my-id').innerText;
+        const url = `${window.location.origin}${window.location.pathname}?connect=${id}`;
+        navigator.clipboard.writeText(url);
+        ui.toast("Link Copied! Send it to friend.");
+    }
+
+    // --- DRAG & DROP ---
+    const dropZone = document.getElementById('drop-zone');
+    dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('dragover');
+        handleFiles(e.dataTransfer.files);
+    });
+
+    // Start App
+    initPeer();
+
+</script>
+</body>
+</html>
