@@ -13,16 +13,19 @@
         :root {
             --bg-body: #000000;
             --primary: #FF2E2E;
-            --primary-gradient: linear-gradient(135deg, #FF2E2E, #B00020);
+            --primary-glow: rgba(255, 46, 46, 0.5);
             --glass-panel: rgba(18, 18, 18, 0.95);
             --glass-border: 1px solid rgba(255, 255, 255, 0.1);
             --glass-light: rgba(255, 255, 255, 0.05);
+            --nav-glass: rgba(10, 10, 10, 0.75); /* Darker glass for nav */
             --text-main: #FFFFFF;
             --text-muted: #888;
             --radius-xl: 30px;
             --radius-md: 18px;
             --blur: blur(40px);
             --shadow: 0 25px 60px rgba(0,0,0,0.8);
+            
+            /* Toast Colors */
             --toast-success: #00ff88;
             --toast-error: #ff4444;
             --toast-info: #2E86FF;
@@ -33,9 +36,10 @@
         body {
             font-family: 'Outfit', sans-serif;
             background: var(--bg-body); color: var(--text-main);
+            /* CRITICAL FIX: 100dvh handles mobile browser bars correctly */
             height: 100dvh; width: 100vw;
             display: flex; justify-content: center; align-items: center; overflow: hidden;
-            background-image: radial-gradient(circle at 50% -20%, rgba(255, 46, 46, 0.2), transparent 50%);
+            background-image: radial-gradient(circle at 50% -20%, rgba(255, 46, 46, 0.15), transparent 50%);
         }
 
         #app {
@@ -44,147 +48,160 @@
             display: flex; flex-direction: column; position: relative; overflow: hidden;
         }
 
-        /* HEADER */
+        /* --- HEADER --- */
         header {
-            height: 65px; padding: 0 20px; display: flex; justify-content: space-between; align-items: center;
-            border-bottom: var(--glass-border); flex-shrink: 0; z-index: 20; background: rgba(0,0,0,0.5);
+            height: 70px; padding: 0 25px; display: flex; justify-content: space-between; align-items: center;
+            /* No border for cleaner look */
+            background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent); 
+            flex-shrink: 0; z-index: 20;
         }
-        .page-title { font-size: 1.3rem; font-weight: 700; }
+        .page-title { 
+            font-size: 1.3rem; font-weight: 800; letter-spacing: 1px; 
+            text-transform: uppercase; color: white;
+            text-shadow: 0 0 15px rgba(255, 46, 46, 0.4);
+        }
         
-        .header-actions { display: flex; gap: 10px; align-items: center; }
+        .header-actions { display: flex; gap: 12px; align-items: center; }
         
         .call-btn {
-            width: 40px; height: 40px; border-radius: 50%; border: var(--glass-border);
+            width: 42px; height: 42px; border-radius: 50%; border: var(--glass-border);
             background: rgba(255,255,255,0.05); color: #666; display: flex; align-items: center; justify-content: center;
             font-size: 1rem; transition: 0.3s;
         }
-        .call-btn.active { background: rgba(255, 46, 46, 0.2); color: var(--primary); border-color: var(--primary); cursor: pointer; }
+        .call-btn.active { background: rgba(255, 46, 46, 0.2); color: var(--primary); border-color: var(--primary); cursor: pointer; box-shadow: 0 0 15px rgba(255, 46, 46, 0.2); }
         .status-dot { width: 10px; height: 10px; background: #444; border-radius: 50%; border: 2px solid rgba(255,255,255,0.1); }
         .status-dot.online { background: #00ff88; box-shadow: 0 0 8px #00ff88; border: none; }
 
-        /* CONTENT */
+        /* --- CONTENT AREA --- */
         main { flex: 1; position: relative; overflow: hidden; width: 100%; }
         
         .view {
             position: absolute; inset: 0; padding: 20px; overflow-y: auto;
-            display: none; flex-direction: column; padding-bottom: 40px;
+            display: none; flex-direction: column; 
+            /* IMPORTANT: Extra padding at bottom so content isn't hidden behind floating nav */
+            padding-bottom: 120px; 
         }
-        .view.active { display: flex; animation: fadeIn 0.2s ease-out; }
-        @keyframes fadeIn { from{opacity:0; transform:scale(0.98);} to{opacity:1; transform:scale(1);} }
+        .view.active { display: flex; animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:translateY(0);} }
 
-        /* NAVIGATION */
+        /* --- UPGRADED FLOATING NAVIGATION --- */
         aside {
-            height: 70px; border-top: var(--glass-border);
-            display: flex; justify-content: space-around; align-items: center;
-            background: #000; flex-shrink: 0; padding-bottom: env(safe-area-inset-bottom); z-index: 30;
+            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+            width: 90%; max-width: 350px; height: 70px;
+            background: var(--nav-glass);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 25px; /* Pill shape */
+            display: flex; justify-content: space-evenly; align-items: center;
+            z-index: 50;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            padding-bottom: 0; /* Override safe area, we handle it with margin */
         }
+
         .nav-item {
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            color: #666; font-size: 1.2rem; height: 100%; width: 60px; transition: 0.2s;
+            color: #666; font-size: 1.3rem; height: 100%; width: 60px; transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
         }
-        .nav-item.active { color: var(--primary); }
-        .nav-text { font-size: 0.65rem; margin-top: 3px; font-weight: 500; }
+        .nav-item.active { color: var(--primary); transform: translateY(-5px); }
+        .nav-item.active::after {
+            content: ''; position: absolute; bottom: 8px; width: 5px; height: 5px;
+            background: var(--primary); border-radius: 50%; box-shadow: 0 0 10px var(--primary);
+        }
+        .nav-text { display: none; } /* Icon only for cleaner look */
 
-        /* BOTTOM BRANDING */
+        /* --- BRANDING WATERMARK --- */
         .bottom-branding {
-            position: absolute; bottom: 75px; width: 100%; text-align: center;
-            font-size: 0.7rem; color: rgba(255, 255, 255, 0.3); letter-spacing: 2px;
-            text-transform: uppercase; font-weight: 500; pointer-events: none; z-index: 25;
+            position: absolute; bottom: 95px; width: 100%; text-align: center;
+            font-size: 0.65rem; color: rgba(255, 255, 255, 0.2); letter-spacing: 3px;
+            text-transform: uppercase; font-weight: 600; pointer-events: none; z-index: 25;
         }
 
-        /* CARDS & INPUTS */
-        .card { background: var(--glass-light); border: var(--glass-border); border-radius: 16px; padding: 20px; margin-bottom: 15px; text-align: center; }
+        /* --- UI COMPONENTS --- */
+        .card { 
+            background: var(--glass-light); border: var(--glass-border); 
+            border-radius: 20px; padding: 25px; margin-bottom: 15px; text-align: center; 
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        }
         
         .btn-primary {
-            width: 100%; padding: 12px; border: none; border-radius: 12px;
+            width: 100%; padding: 14px; border: none; border-radius: 16px;
             background: var(--primary); color: white; font-weight: 600; font-size: 1rem;
-            box-shadow: 0 4px 15px rgba(255, 46, 46, 0.3); margin-top: 10px; cursor: pointer;
+            box-shadow: 0 8px 25px rgba(255, 46, 46, 0.3); margin-top: 10px; cursor: pointer;
+            transition: 0.2s;
         }
-        .btn-primary:active { transform: scale(0.97); }
+        .btn-primary:active { transform: scale(0.96); box-shadow: 0 4px 15px rgba(255, 46, 46, 0.2); }
 
-        .btn-share { background: white; color: black; margin-bottom: 20px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .btn-share { background: white; color: black; box-shadow: 0 5px 20px rgba(255,255,255,0.1); }
 
         input {
-            width: 100%; padding: 14px; background: rgba(0,0,0,0.4); border: var(--glass-border);
-            border-radius: 12px; color: white; margin-bottom: 10px; font-size: 1rem; text-align: center;
+            width: 100%; padding: 16px; background: rgba(0,0,0,0.4); border: var(--glass-border);
+            border-radius: 16px; color: white; margin-bottom: 10px; font-size: 1rem; text-align: center;
+            transition: 0.3s;
         }
-        input:focus { border-color: var(--primary); }
+        input:focus { border-color: var(--primary); box-shadow: 0 0 15px rgba(255,46,46,0.1); }
 
-        /* ID Display */
         .id-box {
-            font-family: monospace; font-size: 1.5rem; color: var(--primary); padding: 15px; 
-            border: 1px dashed var(--primary); border-radius: 12px; background: rgba(0,0,0,0.3); 
-            margin: 15px 0; cursor: pointer; user-select: all;
+            font-family: monospace; font-size: 1.6rem; color: var(--primary); padding: 15px; 
+            border: 1px dashed rgba(255, 46, 46, 0.5); border-radius: 14px; background: rgba(255, 46, 46, 0.05); 
+            margin: 15px 0; cursor: pointer; user-select: all; letter-spacing: 1px;
         }
 
-        /* Transfer UI */
+        /* TRANSFER UI */
         .drop-zone {
-            border: 2px dashed rgba(255,255,255,0.2); border-radius: 16px; height: 180px;
+            border: 2px dashed rgba(255,255,255,0.15); border-radius: 20px; height: 220px;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
-            background: rgba(255,255,255,0.02); margin-bottom: 20px; cursor: pointer;
+            background: linear-gradient(180deg, rgba(255,255,255,0.03), transparent); 
+            margin-bottom: 20px; cursor: pointer; transition: 0.3s;
         }
+        .drop-zone:active { border-color: var(--primary); background: rgba(255,46,46,0.05); }
+        
         .file-item {
-            background: rgba(255,255,255,0.05); padding: 12px; border-radius: 12px;
-            margin-bottom: 10px; display: flex; flex-direction: column; gap: 5px; text-align: left;
+            background: rgba(255,255,255,0.03); padding: 15px; border-radius: 16px;
+            margin-bottom: 10px; display: flex; flex-direction: column; gap: 8px; text-align: left;
+            border: 1px solid rgba(255,255,255,0.05);
         }
         .progress-bar { height: 4px; background: #333; border-radius: 2px; width: 100%; overflow: hidden; }
-        .progress-fill { height: 100%; background: var(--primary); width: 0%; transition: width 0.2s; }
+        .progress-fill { height: 100%; background: var(--primary); width: 0%; transition: width 0.2s; box-shadow: 0 0 10px var(--primary); }
 
-        /* Chat UI */
-        .chat-box { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; margin-bottom: 10px; }
-        .msg { padding: 10px 14px; border-radius: 16px; max-width: 80%; font-size: 0.95rem; line-height: 1.4; word-wrap: break-word; text-align: left; }
+        /* CHAT UI */
+        .chat-box { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; margin-bottom: 10px; padding-right: 5px; }
+        .msg { padding: 12px 16px; border-radius: 18px; max-width: 80%; font-size: 0.95rem; line-height: 1.4; word-wrap: break-word; text-align: left; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
         .msg.me { align-self: flex-end; background: var(--primary); color: white; border-bottom-right-radius: 2px; }
-        .msg.other { align-self: flex-start; background: rgba(255,255,255,0.1); border-bottom-left-radius: 2px; }
+        .msg.other { align-self: flex-start; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.1); border-bottom-left-radius: 2px; }
 
-        /* Video Overlay */
+        /* VIDEO CALL */
         #video-modal { position: absolute; inset: 0; background: #000; z-index: 100; display: none; flex-direction: column; }
         #video-modal.active { display: flex; }
         .video-wrapper { flex: 1; position: relative; width: 100%; display: flex; justify-content: center; background: #111; }
         #remote-video { width: 100%; height: 100%; object-fit: cover; }
-        #local-video { position: absolute; bottom: 100px; right: 20px; width: 100px; height: 140px; background: #222; border-radius: 12px; border: 2px solid var(--primary); object-fit: cover; z-index: 10; }
-        .call-controls { height: 80px; background: rgba(20,20,20,0.9); display: flex; justify-content: center; align-items: center; gap: 30px; padding-bottom: env(safe-area-inset-bottom); }
-        .ctrl-btn { width: 55px; height: 55px; border-radius: 50%; border: none; font-size: 1.3rem; display: flex; align-items: center; justify-content: center; cursor: pointer; }
-        .btn-end { background: #ff3b3b; color: white; }
+        #local-video { position: absolute; bottom: 120px; right: 20px; width: 110px; height: 160px; background: #222; border-radius: 16px; border: 2px solid var(--primary); object-fit: cover; z-index: 10; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .call-controls { height: 100px; background: linear-gradient(to top, #000, transparent); display: flex; justify-content: center; align-items: center; gap: 40px; padding-bottom: 20px; }
+        .ctrl-btn { width: 60px; height: 60px; border-radius: 50%; border: none; font-size: 1.4rem; display: flex; align-items: center; justify-content: center; cursor: pointer; backdrop-filter: blur(10px); }
+        .btn-end { background: #ff3b3b; color: white; box-shadow: 0 5px 20px rgba(255, 59, 59, 0.4); }
         .btn-mute { background: rgba(255,255,255,0.2); color: white; }
         
         #audio-placeholder { position: absolute; display: none; flex-direction: column; align-items: center; justify-content: center; top:0; bottom:0; left:0; right:0; }
-        .audio-avatar { width: 120px; height: 120px; border-radius: 50%; background: #222; border: 3px solid var(--primary); display: flex; align-items: center; justify-content: center; font-size: 3rem; color: var(--primary); animation: pulse 2s infinite; }
-        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(255,46,46,0.6); } 70% { box-shadow: 0 0 0 30px rgba(255,46,46,0); } 100% { box-shadow: 0 0 0 0 rgba(255,46,46,0); } }
+        .audio-avatar { width: 140px; height: 140px; border-radius: 50%; background: #1a1a1a; border: 3px solid var(--primary); display: flex; align-items: center; justify-content: center; font-size: 3.5rem; color: var(--primary); animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(255,46,46,0.6); } 70% { box-shadow: 0 0 0 40px rgba(255,46,46,0); } 100% { box-shadow: 0 0 0 0 rgba(255,46,46,0); } }
 
-        /* --- PREMIUM TOP TOAST (FIXED) --- */
-        #toast-container { 
-            position: absolute; 
-            top: 25px; /* Position from TOP */
-            left: 50%; transform: translateX(-50%); 
-            z-index: 500; /* High Z-Index to float above Header */
-            display: flex; flex-direction: column; gap: 10px; width: 90%; max-width: 350px; 
-            pointer-events: none; 
-        }
-
-        .toast { 
-            background: rgba(20, 20, 20, 0.95); backdrop-filter: blur(20px); 
-            border: 1px solid rgba(255, 255, 255, 0.15); color: white; 
-            padding: 12px 20px; border-radius: 16px; 
-            display: flex; align-items: center; gap: 12px; 
-            box-shadow: 0 15px 40px rgba(0,0,0,0.6); 
-            opacity: 0; transform: translateY(-30px) scale(0.95); /* Slide down animation */
-            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); /* Bouncy effect */
-            font-size: 0.95rem; font-weight: 500;
-        }
-
+        /* TOAST (TOP) */
+        #toast-container { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); z-index: 500; display: flex; flex-direction: column; gap: 10px; width: 90%; max-width: 350px; pointer-events: none; }
+        .toast { background: rgba(25, 25, 25, 0.95); backdrop-filter: blur(15px); border: 1px solid rgba(255, 255, 255, 0.15); color: white; padding: 12px 20px; border-radius: 16px; display: flex; align-items: center; gap: 12px; box-shadow: 0 15px 40px rgba(0,0,0,0.6); opacity: 0; transform: translateY(-30px) scale(0.95); transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); font-size: 0.95rem; font-weight: 500; }
         .toast.show { opacity: 1; transform: translateY(0) scale(1); }
-
         .toast-icon { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; }
         .toast-success { border-left: 4px solid var(--toast-success); } .toast-success .toast-icon { background: rgba(0, 255, 136, 0.2); color: var(--toast-success); }
         .toast-error { border-left: 4px solid var(--toast-error); } .toast-error .toast-icon { background: rgba(255, 68, 68, 0.2); color: var(--toast-error); }
         .toast-info { border-left: 4px solid var(--toast-info); } .toast-info .toast-icon { background: rgba(46, 134, 255, 0.2); color: var(--toast-info); }
 
-        /* Desktop */
+        /* Desktop Adjustments */
         @media (min-width: 769px) {
             #app { border-radius: 20px; height: 90vh; flex-direction: row; }
-            aside { width: 80px; height: 100%; flex-direction: column; border-top: none; border-right: var(--glass-border); padding-top: 40px; justify-content: flex-start; gap: 10px; }
-            .nav-item { height: 70px; width: 100%; }
-            .bottom-branding { bottom: 20px; width: auto; left: 50%; transform: translateX(-50%); }
+            aside { position: relative; bottom: auto; left: auto; transform: none; width: 80px; height: 100%; flex-direction: column; border-top: none; border-right: var(--glass-border); padding-top: 40px; justify-content: flex-start; gap: 20px; background: rgba(0,0,0,0.3); border-radius: 20px 0 0 20px; }
+            .nav-item { height: 60px; width: 100%; flex-direction: row; }
+            .nav-item.active { transform: none; border-right: 3px solid var(--primary); background: rgba(255,255,255,0.05); }
+            .nav-item.active::after { display: none; }
+            .bottom-branding { bottom: 20px; }
         }
     </style>
 </head>
@@ -192,7 +209,7 @@
 
 <div id="app">
     <header>
-        <div class="page-title">File Transfer</div>
+        <div class="page-title">NECXY DOWNLOADER</div>
         <div class="header-actions">
             <div id="btn-audio" class="call-btn" onclick="core.startCall('audio')"><i class="fa-solid fa-phone"></i></div>
             <div id="btn-video" class="call-btn" onclick="core.startCall('video')"><i class="fa-solid fa-video"></i></div>
@@ -203,18 +220,18 @@
     <main>
         <div id="view-transfer" class="view active">
             <div class="card drop-zone" onclick="document.getElementById('file').click()">
-                <i class="fa-solid fa-cloud-arrow-up" style="font-size: 3rem; color: #555; margin-bottom: 15px;"></i>
-                <h3>Tap to Upload</h3>
-                <p style="color:#888; font-size:0.9rem;">20GB+ Supported</p>
+                <i class="fa-solid fa-cloud-arrow-up" style="font-size: 3.5rem; color: #555; margin-bottom: 15px;"></i>
+                <h3 style="margin-bottom: 5px;">Tap to Upload</h3>
+                <p style="color:#888; font-size:0.9rem;">20GB+ Secure Transfer</p>
                 <input type="file" id="file" style="display:none" multiple onchange="core.processFiles(this.files)">
             </div>
             
             <div class="card" style="min-height: 200px; display: flex; flex-direction: column; text-align: left;">
-                <h4 style="margin-bottom:15px; color:#888; font-size:0.8rem; letter-spacing:1px;">TRANSFERS</h4>
+                <h4 style="margin-bottom:15px; color:#888; font-size:0.8rem; letter-spacing:1px; font-weight: 600;">ACTIVITY LOG</h4>
                 <div id="transfer-list" style="flex:1;">
                     <div style="text-align:center; color:#444; margin-top:30px;">
                         <i class="fa-solid fa-clock-rotate-left" style="font-size: 1.5rem; margin-bottom: 10px;"></i>
-                        <p style="font-size:0.9rem;">Empty History</p>
+                        <p style="font-size:0.9rem;">No recent files</p>
                     </div>
                 </div>
             </div>
@@ -223,27 +240,30 @@
         <div id="view-chat" class="view">
             <div class="card" style="flex:1; display:flex; flex-direction:column; margin:0; height:100%;">
                 <div id="chat-box" class="chat-box">
-                    <div style="text-align:center; color:#444; margin-top:auto;">Encrypted Chat</div>
+                    <div style="text-align:center; color:#444; margin-top:auto;">
+                        <i class="fa-solid fa-shield-halved" style="font-size:1.5rem; margin-bottom:10px;"></i><br>
+                        End-to-End Encrypted Chat
+                    </div>
                 </div>
                 <div style="display:flex; gap:10px;">
-                    <input type="text" id="chat-in" placeholder="Message..." style="margin:0; border-radius:50px; text-align: left;" onkeypress="if(event.key==='Enter') core.sendChat()">
-                    <button class="btn-primary" style="width:50px; border-radius:50%; margin:0;" onclick="core.sendChat()"><i class="fa-solid fa-paper-plane"></i></button>
+                    <input type="text" id="chat-in" placeholder="Type a message..." style="margin:0; border-radius:50px; text-align: left;" onkeypress="if(event.key==='Enter') core.sendChat()">
+                    <button class="btn-primary" style="width:55px; border-radius:50%; margin:0;" onclick="core.sendChat()"><i class="fa-solid fa-paper-plane"></i></button>
                 </div>
             </div>
         </div>
 
         <div id="view-connect" class="view">
             <div class="card" style="text-align:center; max-width:500px; margin:0 auto;">
-                <p style="color:#888; margin-bottom:10px;">YOUR ID</p>
+                <p style="color:#888; margin-bottom:10px;">YOUR UNIQUE ID</p>
                 <div id="my-id" class="id-box" onclick="core.copy()">Loading...</div>
                 
                 <button class="btn-primary btn-share" onclick="core.shareLink()">
-                    <i class="fa-solid fa-share-nodes"></i> Share Link
+                    <i class="fa-solid fa-share-nodes"></i> Share Connection Link
                 </button>
                 
-                <div style="height:1px; background:rgba(255,255,255,0.1); margin:20px 0;"></div>
+                <div style="height:1px; background:rgba(255,255,255,0.1); margin:25px 0;"></div>
                 
-                <p style="color:#888; margin-bottom:10px;">CONNECT FRIEND</p>
+                <p style="color:#888; margin-bottom:10px;">CONNECT TO FRIEND</p>
                 <input type="text" id="remote-id" placeholder="Paste ID here">
                 <button class="btn-primary" onclick="core.connect()">Connect Device</button>
             </div>
@@ -255,15 +275,12 @@
     <aside>
         <div class="nav-item active" onclick="ui.view('transfer', this)">
             <i class="fa-solid fa-file-export"></i>
-            <span class="nav-text">Files</span>
         </div>
         <div class="nav-item" onclick="ui.view('chat', this)">
             <i class="fa-solid fa-comments"></i>
-            <span class="nav-text">Chat</span>
         </div>
         <div class="nav-item" onclick="ui.view('connect', this)">
             <i class="fa-solid fa-link"></i>
-            <span class="nav-text">Link</span>
         </div>
     </aside>
 
@@ -329,9 +346,9 @@
             div.id = `file-${id}`;
             div.className = 'file-item';
             div.innerHTML = `
-                <div style="font-weight:600; font-size:0.9rem;">${name}</div>
+                <div style="font-weight:600; font-size:0.9rem; overflow:hidden; white-space:nowrap; text-overflow:ellipsis;">${name}</div>
                 <div class="progress-bar"><div class="progress-fill" style="width:0%"></div></div>
-                <div style="font-size:0.7rem; color:#888; text-align:right; margin-top:2px;">${type === 'out' ? 'Sending...' : 'Receiving...'}</div>`;
+                <div style="font-size:0.7rem; color:#888; text-align:right; margin-top:4px;">${type === 'out' ? 'Sending...' : 'Receiving...'}</div>`;
             list.prepend(div);
         },
         updateProgress: (id, percent) => {
