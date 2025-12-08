@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NCX Drop | Stable Connect</title>
+    <title>NCX Drop | Auto-Connect</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -13,14 +13,14 @@
         /* --- THEME: RED/BLACK GLASSMORPHISM --- */
         :root {
             --bg-body: #000000;
-            --primary: #FF2E2E; /* Vibrant Red */
-            --primary-dark: #cc0000;
-            --glass-panel: rgba(20, 20, 20, 0.85);
+            --primary: #FF2E2E;
+            --primary-gradient: linear-gradient(135deg, #FF2E2E, #B00020);
+            --glass-panel: rgba(18, 18, 18, 0.8);
             --glass-border: 1px solid rgba(255, 255, 255, 0.1);
             --glass-light: rgba(255, 255, 255, 0.05);
             --text-main: #FFFFFF;
             --text-muted: #999;
-            --radius-xl: 32px;
+            --radius-xl: 30px;
             --radius-md: 18px;
             --blur: blur(40px);
             --shadow: 0 25px 60px rgba(0,0,0,0.8);
@@ -50,7 +50,7 @@
         }
         
         .brand-icon {
-            width: 50px; height: 50px; background: var(--primary); color: white;
+            width: 50px; height: 50px; background: var(--primary-gradient); color: white;
             border-radius: 16px; display: flex; align-items: center; justify-content: center;
             font-size: 1.5rem; box-shadow: 0 0 25px rgba(255, 46, 46, 0.4); margin-bottom: 40px;
         }
@@ -74,14 +74,13 @@
         
         .header-actions { display: flex; align-items: center; gap: 15px; }
 
-        /* CALL BUTTONS (Disabled until connected) */
         .call-btn-header {
             width: 45px; height: 45px; border-radius: 50%; border: var(--glass-border);
             background: var(--glass-light); color: #555; display: flex; align-items: center; justify-content: center;
             font-size: 1.1rem; cursor: not-allowed; transition: 0.3s;
         }
         .call-btn-header.active {
-            background: var(--glass-light); color: white; cursor: pointer;
+            background: var(--glass-highlight); color: white; cursor: pointer;
         }
         .call-btn-header.active:hover { background: var(--primary); box-shadow: 0 0 15px var(--primary); border-color: var(--primary); }
 
@@ -89,7 +88,7 @@
             padding: 8px 16px; background: var(--glass-light); border-radius: 30px;
             border: var(--glass-border); font-size: 0.9rem; display: flex; align-items: center; gap: 10px;
         }
-        .dot { width: 10px; height: 10px; background: #555; border-radius: 50%; transition: 0.3s; }
+        .dot { width: 8px; height: 8px; background: #555; border-radius: 50%; }
         .dot.online { background: #00ff88; box-shadow: 0 0 10px #00ff88; }
 
         /* --- VIEWS --- */
@@ -106,7 +105,7 @@
             display: flex; align-items: center; justify-content: center; gap: 10px;
         }
         .btn-primary:active { transform: scale(0.97); }
-        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; filter: grayscale(1); }
+        .btn-share { background: #fff; color: #000; box-shadow: 0 5px 15px rgba(255,255,255,0.2); }
 
         input {
             width: 100%; background: rgba(0,0,0,0.3); border: var(--glass-border);
@@ -123,6 +122,14 @@
         .drop-zone:hover { border-color: var(--primary); background: rgba(255, 46, 46, 0.05); }
         .drop-icon { font-size: 3.5rem; color: #444; margin-bottom: 15px; transition: 0.3s; }
         .drop-zone:hover .drop-icon { color: var(--primary); transform: translateY(-5px); }
+
+        /* QR & ID */
+        .id-display {
+            font-family: monospace; font-size: 1.6rem; color: var(--primary); letter-spacing: 2px;
+            background: rgba(0,0,0,0.4); padding: 15px; border-radius: 12px;
+            border: 1px dashed var(--primary); text-align: center; margin: 20px 0; cursor: pointer;
+        }
+        .qr-wrapper { background: white; padding: 15px; border-radius: 20px; width: fit-content; margin: 0 auto; }
 
         /* Chat */
         .chat-container { display: flex; flex-direction: column; height: 100%; text-align: left; }
@@ -177,16 +184,9 @@
         <header>
             <div class="page-title" id="page-title">File Transfer</div>
             <div class="header-actions">
-                <button id="btn-audio" class="call-btn-header" onclick="core.startCall('audio')" title="Voice Call">
-                    <i class="fa-solid fa-phone"></i>
-                </button>
-                <button id="btn-video" class="call-btn-header" onclick="core.startCall('video')" title="Video Call">
-                    <i class="fa-solid fa-video"></i>
-                </button>
-                <div class="status-badge">
-                    <div class="dot" id="dot"></div>
-                    <span id="stat">Offline</span>
-                </div>
+                <button id="btn-audio" class="call-btn-header" onclick="core.startCall('audio')" title="Voice Call"><i class="fa-solid fa-phone"></i></button>
+                <button id="btn-video" class="call-btn-header" onclick="core.startCall('video')" title="Video Call"><i class="fa-solid fa-video"></i></button>
+                <div class="status-badge"><div class="dot" id="dot"></div><span id="stat">Offline</span></div>
             </div>
         </header>
 
@@ -198,15 +198,30 @@
                     <p style="color:var(--text-muted);">Secure P2P Channel</p>
                     <input type="file" id="file" style="display:none" multiple onchange="core.sendFiles(this.files)">
                 </div>
-
-                <div class="card" style="display:flex; flex-direction:column; text-align: left;">
+                <div class="card" style="display:flex; flex-direction:column;">
                     <h4 style="margin-bottom:20px; color:var(--text-muted); text-transform:uppercase; font-size:0.85rem; letter-spacing:1px;">Activity Log</h4>
                     <div id="transfer-list" style="flex:1; overflow-y:auto; padding-right:5px;">
-                        <div style="text-align:center; color:#444; margin-top:40px;">
-                            <i class="fa-solid fa-clock-rotate-left" style="font-size: 2rem; margin-bottom: 10px;"></i>
-                            <p>No activity yet.</p>
-                        </div>
+                        <div style="text-align:center; color:#444; margin-top:40px;"><i class="fa-solid fa-clock-rotate-left" style="font-size: 2rem; margin-bottom: 10px;"></i><p>No activity yet.</p></div>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-connect" class="view">
+            <div class="card" style="max-width:550px; margin:0 auto; text-align:center;">
+                <h3>Your Identity</h3>
+                <div class="qr-wrapper"><div id="qrcode"></div></div>
+                <div class="id-display" id="my-id" onclick="core.copy()">Generating...</div>
+                
+                <button class="btn-primary btn-share" onclick="core.shareLink()" style="margin-bottom: 25px; color: black; background: white;">
+                    <i class="fa-solid fa-share-nodes"></i> Share Connection Link
+                </button>
+                
+                <div style="width:100%; height:1px; background:rgba(255,255,255,0.1); margin-bottom:25px;"></div>
+                <h3 style="margin-bottom:20px; text-align:left;">Connect Remote</h3>
+                <div style="display: flex; gap: 15px;">
+                    <input type="text" id="remote-id" placeholder="Paste ID here">
+                    <button class="btn-primary" style="width: auto;" onclick="core.connect()"><i class="fa-solid fa-link"></i> Connect</button>
                 </div>
             </div>
         </div>
@@ -214,36 +229,11 @@
         <div id="view-chat" class="view">
             <div class="card chat-container">
                 <div id="chat-box" class="chat-box">
-                    <div style="text-align:center; color:#444; margin-top:auto;">
-                        <i class="fa-solid fa-shield-halved" style="margin-bottom: 10px;"></i><br>Encrypted Chat
-                    </div>
+                    <div style="text-align:center; color:#444; margin-top:auto;"><i class="fa-solid fa-lock" style="margin-bottom: 10px;"></i><br>Encrypted Chat</div>
                 </div>
                 <div style="display:flex; gap:15px; align-items: center;">
-                    <input type="text" id="chat-in" placeholder="Type a message..." style="margin:0; text-align:left;" onkeypress="if(event.key==='Enter') core.sendChat()">
-                    <button class="btn-primary" style="width:60px; height: 55px; border-radius: 18px; padding: 0;" onclick="core.sendChat()">
-                        <i class="fa-solid fa-paper-plane" style="font-size: 1.2rem;"></i>
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <div id="view-connect" class="view">
-            <div class="card" style="max-width:550px; margin:0 auto;">
-                <h3 style="margin-bottom: 5px;">Your Identity</h3>
-                <p style="color:var(--text-muted); margin-bottom:25px;">Scan to pair instantly</p>
-                
-                <div class="id-display" id="my-id" style="font-family:monospace; font-size:1.6rem; color:var(--primary); background:rgba(0,0,0,0.4); padding:15px; border-radius:12px; border:1px dashed var(--primary); text-align:center; cursor:pointer;" onclick="core.copy()">Loading...</div>
-                
-                <div id="qrcode" style="margin:20px auto; background:white; padding:10px; width:fit-content; border-radius:10px;"></div>
-                
-                <div style="width:100%; height:1px; background:rgba(255,255,255,0.1); margin:30px 0;"></div>
-                
-                <h3 style="margin-bottom:20px;">Connect Remote</h3>
-                <div style="display: flex; gap: 15px;">
-                    <input type="text" id="remote-id" placeholder="Paste ID here">
-                    <button id="connect-btn" class="btn-primary" style="width: auto;" onclick="core.connect()">
-                        <i class="fa-solid fa-link"></i> Connect
-                    </button>
+                    <input type="text" id="chat-in" placeholder="Type a message..." onkeypress="if(event.key==='Enter') core.sendChat()">
+                    <button class="btn-primary" style="width:60px; height: 55px; border-radius: 18px; padding: 0;" onclick="core.sendChat()"><i class="fa-solid fa-paper-plane" style="font-size: 1.2rem;"></i></button>
                 </div>
             </div>
         </div>
@@ -277,43 +267,34 @@
             document.getElementById('view-'+id).classList.add('active');
             document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
             if(el) el.classList.add('active');
-            
             const titles = { transfer: 'File Transfer', chat: 'Secure Chat', connect: 'Connect Devices' };
             document.getElementById('page-title').innerText = titles[id];
         },
         status: (connected) => {
             const dot = document.getElementById('dot');
             const txt = document.getElementById('stat');
-            const btnAudio = document.getElementById('btn-audio');
-            const btnVideo = document.getElementById('btn-video');
+            const audBtn = document.getElementById('btn-audio');
+            const vidBtn = document.getElementById('btn-video');
             
             if(connected) {
                 dot.classList.add('online'); txt.innerText = "Connected"; txt.style.color = "#00ff88";
-                btnAudio.classList.add('active'); btnVideo.classList.add('active');
+                audBtn.classList.add('active'); vidBtn.classList.add('active');
             } else {
                 dot.classList.remove('online'); txt.innerText = "Offline"; txt.style.color = "#888";
-                btnAudio.classList.remove('active'); btnVideo.classList.remove('active');
+                audBtn.classList.remove('active'); vidBtn.classList.remove('active');
             }
         },
-        toast: (msg, error = false) => {
+        toast: (msg) => {
             const t = document.getElementById('toast');
-            t.innerText = msg;
-            t.style.borderColor = error ? '#ff3b3b' : 'var(--primary)';
-            t.classList.add('show');
+            t.innerText = msg; t.classList.add('show');
             setTimeout(() => t.classList.remove('show'), 3000);
         },
         log: (name, type) => {
             const h = document.getElementById('transfer-list');
             if(h.innerText.includes('No activity')) h.innerHTML = '';
-            
             h.innerHTML = `<div class="transfer-item" style="display:flex; align-items:center; gap:15px; padding:15px; background:var(--glass-light); border-radius:15px; margin-bottom:10px; border:var(--glass-border);">
-                <div style="width:40px; height:40px; background:rgba(255,255,255,0.1); border-radius:10px; display:flex; align-items:center; justify-content:center; color:var(--primary);">
-                    <i class="fa-solid ${type==='in'?'fa-download':'fa-upload'}"></i>
-                </div>
-                <div>
-                    <div style="font-weight:600; font-size:0.95rem;">${name}</div>
-                    <div style="font-size:0.85rem; color:var(--text-muted);">${type==='in'?'Received':'Sent'}</div>
-                </div>
+                <div style="width:40px; height:40px; background:rgba(255,255,255,0.1); border-radius:10px; display:flex; align-items:center; justify-content:center; color:var(--primary);"><i class="fa-solid ${type==='in'?'fa-download':'fa-upload'}"></i></div>
+                <div><div style="font-weight:600; font-size:0.95rem;">${name}</div><div style="font-size:0.85rem; color:var(--text-muted);">${type==='in'?'Received':'Sent'}</div></div>
             </div>` + h.innerHTML;
         },
         msg: (txt, type) => {
@@ -330,43 +311,29 @@
     const core = {
         init: () => {
             const id = 'ncx-' + Math.floor(Math.random()*9000 + 1000);
-            // STUN/TURN CONFIG FOR RELIABILITY
-            peer = new Peer(id, {
-                config: {
-                    iceServers: [
-                        { urls: 'stun:stun1.l.google.com:19302' },
-                        { urls: 'stun:stun2.l.google.com:19302' }
-                    ]
-                }
-            });
+            peer = new Peer(id, { config: { iceServers: [{urls:'stun:stun1.l.google.com:19302'}] } });
 
             peer.on('open', id => {
                 document.getElementById('my-id').innerText = id;
+                const link = window.location.href.split('?')[0] + "?c=" + id;
                 document.getElementById("qrcode").innerHTML = "";
-                new QRCode(document.getElementById("qrcode"), { text: window.location.href+"?c="+id, width: 128, height: 128 });
+                new QRCode(document.getElementById("qrcode"), { text: link, width: 128, height: 128 });
                 
+                // AUTO CONNECT LOGIC
                 const p = new URLSearchParams(window.location.search);
                 if(p.get('c')) {
                     document.getElementById('remote-id').value = p.get('c');
                     ui.view('connect', document.querySelectorAll('.nav-item')[2]);
-                    setTimeout(core.connect, 1000);
+                    ui.toast("Auto Connecting...");
+                    setTimeout(core.connect, 1500); // Small delay to ensure init
                 }
-            });
-
-            peer.on('error', err => {
-                ui.toast("Error: " + err.type, true);
-                const btn = document.getElementById('connect-btn');
-                if(btn) { btn.innerHTML = '<i class="fa-solid fa-link"></i> Connect'; btn.disabled = false; }
             });
 
             peer.on('connection', c => { conn = c; core.ready(); });
             
-            // INCOMING CALL HANDLER
             peer.on('call', call => {
                 const isVideo = call.metadata && call.metadata.type === 'video';
-                const typeStr = isVideo ? "Video" : "Voice";
-                
-                if(confirm(`Incoming ${typeStr} Call... Accept?`)) {
+                if(confirm(`Incoming ${isVideo ? "Video" : "Voice"} Call... Accept?`)) {
                     const constraints = isVideo ? {video:true, audio:true} : {video:false, audio:true};
                     navigator.mediaDevices.getUserMedia(constraints).then(stream => {
                         localStream = stream;
@@ -376,41 +343,39 @@
                             document.getElementById('remote-video').srcObject = remStream;
                         });
                         peerCall = call;
-                    }).catch(e => ui.toast("Mic/Cam Blocked", true));
+                    });
                 }
             });
         },
 
-        connect: () => {
-            const id = document.getElementById('remote-id').value.trim();
-            if(!id) return ui.toast("Enter ID", true);
-            
-            const btn = document.querySelector('#view-connect .btn-primary');
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Connecting...';
-            btn.disabled = true;
+        shareLink: async () => {
+            const id = document.getElementById('my-id').innerText;
+            const url = window.location.href.split('?')[0] + "?c=" + id;
+            if (navigator.share) {
+                try { await navigator.share({ title: 'Connect to NCX Drop', url: url }); } 
+                catch (err) { core.copyLink(url); }
+            } else {
+                core.copyLink(url);
+            }
+        },
 
+        copyLink: (url) => {
+            navigator.clipboard.writeText(url);
+            ui.toast("Link Copied to Clipboard!");
+        },
+
+        connect: () => {
+            const id = document.getElementById('remote-id').value;
+            if(!id) return ui.toast("Enter ID!");
             conn = peer.connect(id);
-            
-            conn.on('open', () => {
-                btn.innerHTML = '<i class="fa-solid fa-link"></i> Connect';
-                btn.disabled = false;
-                ui.toast("Connected!");
-                core.ready();
-            });
-            
-            conn.on('error', () => {
-                btn.innerHTML = '<i class="fa-solid fa-link"></i> Connect';
-                btn.disabled = false;
-                ui.toast("Connection Failed", true);
-            });
+            conn.on('open', () => { ui.toast("Connected!"); core.ready(); });
         },
 
         ready: () => {
             ui.status(true);
             ui.view('transfer', document.querySelectorAll('.nav-item')[0]);
-            
             conn.on('data', d => {
-                if(d.type === 'chat') { ui.msg(d.val, 'other'); ui.toast("New Message"); }
+                if(d.type === 'chat') { ui.msg(d.val, 'other'); ui.toast("Message Recv"); }
                 if(d.type === 'file') {
                     ui.log(d.name, 'in');
                     const blob = new Blob([d.file]);
@@ -423,7 +388,7 @@
         },
 
         sendFiles: (files) => {
-            if(!conn) return ui.toast("Connect First!", true);
+            if(!conn) return ui.toast("Not Connected");
             Array.from(files).forEach(f => {
                 ui.log(f.name, 'out');
                 const blob = new Blob([f], {type:f.type});
@@ -440,26 +405,24 @@
         },
 
         startCall: (type) => {
-            if(!conn) return ui.toast("Connect First!", true);
+            if(!conn) return ui.toast("Connect First!");
             const isVideo = type === 'video';
             const constraints = isVideo ? {video:true, audio:true} : {video:false, audio:true};
             
             navigator.mediaDevices.getUserMedia(constraints).then(stream => {
                 localStream = stream;
                 core.setupCallUI(isVideo);
-                
                 const call = peer.call(conn.peer, stream, {metadata: {type: type}});
                 call.on('stream', remStream => {
                     document.getElementById('remote-video').srcObject = remStream;
                 });
                 peerCall = call;
-            }).catch(e => ui.toast("Permission Denied", true));
+            });
         },
 
         setupCallUI: (isVideo) => {
             document.getElementById('call-modal').classList.add('active');
             document.getElementById('local-video').srcObject = localStream;
-            
             if(isVideo) {
                 document.getElementById('local-video').style.display = 'block';
                 document.getElementById('audio-placeholder').style.display = 'none';
@@ -476,11 +439,7 @@
         },
 
         toggleMute: () => {
-            if(localStream) {
-                const track = localStream.getAudioTracks()[0];
-                track.enabled = !track.enabled;
-                ui.toast(track.enabled ? "Unmuted" : "Muted");
-            }
+            if(localStream) localStream.getAudioTracks()[0].enabled = !localStream.getAudioTracks()[0].enabled;
         },
 
         copy: () => {
