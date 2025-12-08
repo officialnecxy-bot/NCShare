@@ -2,28 +2,30 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NCX Drop | Auto-Connect</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>NECXY Drop</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
-        /* --- THEME: RED/BLACK GLASSMORPHISM --- */
+        /* --- THEME --- */
         :root {
             --bg-body: #000000;
             --primary: #FF2E2E;
             --primary-gradient: linear-gradient(135deg, #FF2E2E, #B00020);
-            --glass-panel: rgba(18, 18, 18, 0.8);
+            --glass-panel: rgba(18, 18, 18, 0.95);
             --glass-border: 1px solid rgba(255, 255, 255, 0.1);
             --glass-light: rgba(255, 255, 255, 0.05);
             --text-main: #FFFFFF;
-            --text-muted: #999;
+            --text-muted: #888;
             --radius-xl: 30px;
             --radius-md: 18px;
             --blur: blur(40px);
             --shadow: 0 25px 60px rgba(0,0,0,0.8);
+            --toast-success: #00ff88;
+            --toast-error: #ff4444;
+            --toast-info: #2E86FF;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; outline: none; -webkit-tap-highlight-color: transparent; user-select: none; }
@@ -31,215 +33,241 @@
         body {
             font-family: 'Outfit', sans-serif;
             background: var(--bg-body); color: var(--text-main);
-            height: 100vh; display: flex; justify-content: center; align-items: center; overflow: hidden;
+            height: 100dvh; width: 100vw;
+            display: flex; justify-content: center; align-items: center; overflow: hidden;
             background-image: radial-gradient(circle at 50% -20%, rgba(255, 46, 46, 0.2), transparent 50%);
         }
 
         #app {
-            width: 95%; max-width: 1200px; height: 92vh;
-            background: var(--glass-panel); backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur);
-            border: var(--glass-border); border-radius: var(--radius-xl);
-            box-shadow: var(--shadow); display: flex; overflow: hidden; position: relative;
+            width: 100%; max-width: 800px; height: 100%;
+            background: var(--glass-panel);
+            display: flex; flex-direction: column; position: relative; overflow: hidden;
         }
 
-        /* --- SIDEBAR --- */
-        aside {
-            width: 90px; border-right: var(--glass-border);
-            display: flex; flex-direction: column; align-items: center; padding: 35px 0;
-            background: rgba(0,0,0,0.2); z-index: 20;
-        }
-        
-        .brand-icon {
-            width: 50px; height: 50px; background: var(--primary-gradient); color: white;
-            border-radius: 16px; display: flex; align-items: center; justify-content: center;
-            font-size: 1.5rem; box-shadow: 0 0 25px rgba(255, 46, 46, 0.4); margin-bottom: 40px;
-        }
-
-        .nav-item {
-            width: 50px; height: 50px; margin-bottom: 20px; border-radius: 14px;
-            display: flex; align-items: center; justify-content: center;
-            color: var(--text-muted); font-size: 1.4rem; cursor: pointer; transition: 0.3s;
-        }
-        .nav-item:hover { background: var(--glass-light); color: white; }
-        .nav-item.active { background: rgba(255, 46, 46, 0.1); color: var(--primary); border: 1px solid rgba(255, 46, 46, 0.3); }
-
-        /* --- MAIN AREA --- */
-        main { flex: 1; display: flex; flex-direction: column; position: relative; overflow: hidden; }
-
+        /* HEADER */
         header {
-            height: 90px; padding: 0 40px; display: flex; justify-content: space-between; align-items: center;
-            border-bottom: var(--glass-border);
+            height: 65px; padding: 0 20px; display: flex; justify-content: space-between; align-items: center;
+            border-bottom: var(--glass-border); flex-shrink: 0; z-index: 20; background: rgba(0,0,0,0.5);
         }
-        .page-title { font-size: 1.8rem; font-weight: 700; }
+        .page-title { font-size: 1.3rem; font-weight: 700; }
         
-        .header-actions { display: flex; align-items: center; gap: 15px; }
-
-        .call-btn-header {
-            width: 45px; height: 45px; border-radius: 50%; border: var(--glass-border);
-            background: var(--glass-light); color: #555; display: flex; align-items: center; justify-content: center;
-            font-size: 1.1rem; cursor: not-allowed; transition: 0.3s;
+        .header-actions { display: flex; gap: 10px; align-items: center; }
+        
+        .call-btn {
+            width: 40px; height: 40px; border-radius: 50%; border: var(--glass-border);
+            background: rgba(255,255,255,0.05); color: #666; display: flex; align-items: center; justify-content: center;
+            font-size: 1rem; transition: 0.3s;
         }
-        .call-btn-header.active {
-            background: var(--glass-highlight); color: white; cursor: pointer;
+        .call-btn.active { background: rgba(255, 46, 46, 0.2); color: var(--primary); border-color: var(--primary); cursor: pointer; }
+        .status-dot { width: 10px; height: 10px; background: #444; border-radius: 50%; border: 2px solid rgba(255,255,255,0.1); }
+        .status-dot.online { background: #00ff88; box-shadow: 0 0 8px #00ff88; border: none; }
+
+        /* CONTENT */
+        main { flex: 1; position: relative; overflow: hidden; width: 100%; }
+        
+        .view {
+            position: absolute; inset: 0; padding: 20px; overflow-y: auto;
+            display: none; flex-direction: column; padding-bottom: 40px;
         }
-        .call-btn-header.active:hover { background: var(--primary); box-shadow: 0 0 15px var(--primary); border-color: var(--primary); }
+        .view.active { display: flex; animation: fadeIn 0.2s ease-out; }
+        @keyframes fadeIn { from{opacity:0; transform:scale(0.98);} to{opacity:1; transform:scale(1);} }
 
-        .status-badge {
-            padding: 8px 16px; background: var(--glass-light); border-radius: 30px;
-            border: var(--glass-border); font-size: 0.9rem; display: flex; align-items: center; gap: 10px;
+        /* NAVIGATION */
+        aside {
+            height: 70px; border-top: var(--glass-border);
+            display: flex; justify-content: space-around; align-items: center;
+            background: #000; flex-shrink: 0; padding-bottom: env(safe-area-inset-bottom); z-index: 30;
         }
-        .dot { width: 8px; height: 8px; background: #555; border-radius: 50%; }
-        .dot.online { background: #00ff88; box-shadow: 0 0 10px #00ff88; }
+        .nav-item {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            color: #666; font-size: 1.2rem; height: 100%; width: 60px; transition: 0.2s;
+        }
+        .nav-item.active { color: var(--primary); }
+        .nav-text { font-size: 0.65rem; margin-top: 3px; font-weight: 500; }
 
-        /* --- VIEWS --- */
-        .view { position: absolute; inset: 0; top: 90px; padding: 30px; opacity: 0; pointer-events: none; transition: 0.4s; transform: translateY(10px); overflow-y: auto; }
-        .view.active { opacity: 1; pointer-events: all; transform: translateY(0); }
+        /* BOTTOM BRANDING */
+        .bottom-branding {
+            position: absolute; bottom: 75px; width: 100%; text-align: center;
+            font-size: 0.7rem; color: rgba(255, 255, 255, 0.3); letter-spacing: 2px;
+            text-transform: uppercase; font-weight: 500; pointer-events: none; z-index: 25;
+        }
 
-        /* --- UI COMPONENTS --- */
-        .card { background: var(--glass-light); border: var(--glass-border); border-radius: 24px; padding: 30px; margin-bottom: 25px; text-align: center; }
+        /* CARDS & INPUTS */
+        .card { background: var(--glass-light); border: var(--glass-border); border-radius: 16px; padding: 20px; margin-bottom: 15px; text-align: center; }
         
         .btn-primary {
-            background: var(--primary); border: none; padding: 14px; width: 100%;
-            color: white; border-radius: 18px; font-weight: 600; cursor: pointer; font-size: 1rem;
-            box-shadow: 0 5px 20px rgba(255, 46, 46, 0.3); transition: 0.2s;
-            display: flex; align-items: center; justify-content: center; gap: 10px;
+            width: 100%; padding: 12px; border: none; border-radius: 12px;
+            background: var(--primary); color: white; font-weight: 600; font-size: 1rem;
+            box-shadow: 0 4px 15px rgba(255, 46, 46, 0.3); margin-top: 10px; cursor: pointer;
         }
         .btn-primary:active { transform: scale(0.97); }
-        .btn-share { background: #fff; color: #000; box-shadow: 0 5px 15px rgba(255,255,255,0.2); }
+
+        .btn-share { background: white; color: black; margin-bottom: 20px; display: flex; align-items: center; justify-content: center; gap: 8px; }
 
         input {
-            width: 100%; background: rgba(0,0,0,0.3); border: var(--glass-border);
-            padding: 16px; border-radius: 14px; color: white; font-size: 1rem; margin-bottom: 15px; text-align: center;
+            width: 100%; padding: 14px; background: rgba(0,0,0,0.4); border: var(--glass-border);
+            border-radius: 12px; color: white; margin-bottom: 10px; font-size: 1rem; text-align: center;
         }
         input:focus { border-color: var(--primary); }
 
-        /* Drop Zone */
+        /* ID Display */
+        .id-box {
+            font-family: monospace; font-size: 1.5rem; color: var(--primary); padding: 15px; 
+            border: 1px dashed var(--primary); border-radius: 12px; background: rgba(0,0,0,0.3); 
+            margin: 15px 0; cursor: pointer; user-select: all;
+        }
+
+        /* Transfer UI */
         .drop-zone {
-            border: 2px dashed rgba(255,255,255,0.15); border-radius: 24px; height: 250px;
+            border: 2px dashed rgba(255,255,255,0.2); border-radius: 16px; height: 180px;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
-            transition: 0.3s; cursor: pointer; background: rgba(255,255,255,0.01);
+            background: rgba(255,255,255,0.02); margin-bottom: 20px; cursor: pointer;
         }
-        .drop-zone:hover { border-color: var(--primary); background: rgba(255, 46, 46, 0.05); }
-        .drop-icon { font-size: 3.5rem; color: #444; margin-bottom: 15px; transition: 0.3s; }
-        .drop-zone:hover .drop-icon { color: var(--primary); transform: translateY(-5px); }
-
-        /* QR & ID */
-        .id-display {
-            font-family: monospace; font-size: 1.6rem; color: var(--primary); letter-spacing: 2px;
-            background: rgba(0,0,0,0.4); padding: 15px; border-radius: 12px;
-            border: 1px dashed var(--primary); text-align: center; margin: 20px 0; cursor: pointer;
+        .file-item {
+            background: rgba(255,255,255,0.05); padding: 12px; border-radius: 12px;
+            margin-bottom: 10px; display: flex; flex-direction: column; gap: 5px; text-align: left;
         }
-        .qr-wrapper { background: white; padding: 15px; border-radius: 20px; width: fit-content; margin: 0 auto; }
+        .progress-bar { height: 4px; background: #333; border-radius: 2px; width: 100%; overflow: hidden; }
+        .progress-fill { height: 100%; background: var(--primary); width: 0%; transition: width 0.2s; }
 
-        /* Chat */
-        .chat-container { display: flex; flex-direction: column; height: 100%; text-align: left; }
-        .chat-box { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; padding-bottom: 20px; }
-        .msg { padding: 12px 18px; border-radius: 20px; max-width: 75%; font-size: 1rem; line-height: 1.5; }
+        /* Chat UI */
+        .chat-box { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; margin-bottom: 10px; }
+        .msg { padding: 10px 14px; border-radius: 16px; max-width: 80%; font-size: 0.95rem; line-height: 1.4; word-wrap: break-word; text-align: left; }
         .msg.me { align-self: flex-end; background: var(--primary); color: white; border-bottom-right-radius: 2px; }
-        .msg.other { align-self: flex-start; background: var(--glass-highlight); border: var(--glass-border); border-bottom-left-radius: 2px; }
+        .msg.other { align-self: flex-start; background: rgba(255,255,255,0.1); border-bottom-left-radius: 2px; }
 
         /* Video Overlay */
-        #call-modal { position: absolute; inset: 0; background: #000; z-index: 100; display: none; flex-direction: column; }
-        #call-modal.active { display: flex; }
-        .video-wrapper { flex: 1; position: relative; width: 100%; display: flex; justify-content: center; align-items: center; }
+        #video-modal { position: absolute; inset: 0; background: #000; z-index: 100; display: none; flex-direction: column; }
+        #video-modal.active { display: flex; }
+        .video-wrapper { flex: 1; position: relative; width: 100%; display: flex; justify-content: center; background: #111; }
         #remote-video { width: 100%; height: 100%; object-fit: cover; }
-        #audio-placeholder { position: absolute; display: none; flex-direction: column; align-items: center; }
-        .audio-avatar { width: 150px; height: 150px; border-radius: 50%; border: 4px solid var(--primary); display: flex; align-items: center; justify-content: center; font-size: 4rem; color: var(--primary); animation: pulse 2s infinite; }
-        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(255,46,46,0.7); } 70% { box-shadow: 0 0 0 40px rgba(255,46,46,0); } 100% { box-shadow: 0 0 0 0 rgba(255,46,46,0); } }
-        #local-video { position: absolute; bottom: 30px; right: 30px; width: 130px; height: 180px; background: #222; border-radius: 16px; border: 2px solid var(--primary); object-fit: cover; z-index: 10; }
-        .call-controls { height: 100px; background: rgba(10,10,10,0.8); display: flex; justify-content: center; align-items: center; gap: 40px; }
-        .ctrl-btn { width: 65px; height: 65px; border-radius: 50%; border: none; font-size: 1.5rem; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        #local-video { position: absolute; bottom: 100px; right: 20px; width: 100px; height: 140px; background: #222; border-radius: 12px; border: 2px solid var(--primary); object-fit: cover; z-index: 10; }
+        .call-controls { height: 80px; background: rgba(20,20,20,0.9); display: flex; justify-content: center; align-items: center; gap: 30px; padding-bottom: env(safe-area-inset-bottom); }
+        .ctrl-btn { width: 55px; height: 55px; border-radius: 50%; border: none; font-size: 1.3rem; display: flex; align-items: center; justify-content: center; cursor: pointer; }
         .btn-end { background: #ff3b3b; color: white; }
         .btn-mute { background: rgba(255,255,255,0.2); color: white; }
+        
+        #audio-placeholder { position: absolute; display: none; flex-direction: column; align-items: center; justify-content: center; top:0; bottom:0; left:0; right:0; }
+        .audio-avatar { width: 120px; height: 120px; border-radius: 50%; background: #222; border: 3px solid var(--primary); display: flex; align-items: center; justify-content: center; font-size: 3rem; color: var(--primary); animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(255,46,46,0.6); } 70% { box-shadow: 0 0 0 30px rgba(255,46,46,0); } 100% { box-shadow: 0 0 0 0 rgba(255,46,46,0); } }
 
-        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; height: 100%; text-align: left; }
+        /* --- PREMIUM TOP TOAST (FIXED) --- */
+        #toast-container { 
+            position: absolute; 
+            top: 25px; /* Position from TOP */
+            left: 50%; transform: translateX(-50%); 
+            z-index: 500; /* High Z-Index to float above Header */
+            display: flex; flex-direction: column; gap: 10px; width: 90%; max-width: 350px; 
+            pointer-events: none; 
+        }
 
-        /* Toast */
-        #toast { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(100px); background: #151515; border: 1px solid var(--primary); color: white; padding: 12px 30px; border-radius: 50px; font-weight: 500; transition: 0.4s; opacity: 0; pointer-events: none; z-index: 200; white-space: nowrap; }
-        #toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+        .toast { 
+            background: rgba(20, 20, 20, 0.95); backdrop-filter: blur(20px); 
+            border: 1px solid rgba(255, 255, 255, 0.15); color: white; 
+            padding: 12px 20px; border-radius: 16px; 
+            display: flex; align-items: center; gap: 12px; 
+            box-shadow: 0 15px 40px rgba(0,0,0,0.6); 
+            opacity: 0; transform: translateY(-30px) scale(0.95); /* Slide down animation */
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); /* Bouncy effect */
+            font-size: 0.95rem; font-weight: 500;
+        }
 
-        /* Mobile */
-        @media (max-width: 768px) {
-            #app { border-radius: 0; border: none; flex-direction: column-reverse; width: 100%; height: 100%; }
-            aside { width: 100%; height: 80px; flex-direction: row; justify-content: space-around; padding: 0; background: black; border-top: var(--glass-border); border-right: none; }
-            .brand-icon { display: none; }
-            .nav-item { margin-bottom: 0; }
-            .grid-2 { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
-            header { padding: 0 20px; }
-            .header-actions span { display: none; }
+        .toast.show { opacity: 1; transform: translateY(0) scale(1); }
+
+        .toast-icon { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; }
+        .toast-success { border-left: 4px solid var(--toast-success); } .toast-success .toast-icon { background: rgba(0, 255, 136, 0.2); color: var(--toast-success); }
+        .toast-error { border-left: 4px solid var(--toast-error); } .toast-error .toast-icon { background: rgba(255, 68, 68, 0.2); color: var(--toast-error); }
+        .toast-info { border-left: 4px solid var(--toast-info); } .toast-info .toast-icon { background: rgba(46, 134, 255, 0.2); color: var(--toast-info); }
+
+        /* Desktop */
+        @media (min-width: 769px) {
+            #app { border-radius: 20px; height: 90vh; flex-direction: row; }
+            aside { width: 80px; height: 100%; flex-direction: column; border-top: none; border-right: var(--glass-border); padding-top: 40px; justify-content: flex-start; gap: 10px; }
+            .nav-item { height: 70px; width: 100%; }
+            .bottom-branding { bottom: 20px; width: auto; left: 50%; transform: translateX(-50%); }
         }
     </style>
 </head>
 <body>
 
 <div id="app">
-    <aside>
-        <div class="brand-icon"><i class="fa-solid fa-bolt"></i></div>
-        <div class="nav-item active" onclick="ui.view('transfer', this)"><i class="fa-solid fa-file-arrow-up"></i></div>
-        <div class="nav-item" onclick="ui.view('chat', this)"><i class="fa-solid fa-comments"></i></div>
-        <div class="nav-item" onclick="ui.view('connect', this)"><i class="fa-solid fa-link"></i></div>
-    </aside>
+    <header>
+        <div class="page-title">File Transfer</div>
+        <div class="header-actions">
+            <div id="btn-audio" class="call-btn" onclick="core.startCall('audio')"><i class="fa-solid fa-phone"></i></div>
+            <div id="btn-video" class="call-btn" onclick="core.startCall('video')"><i class="fa-solid fa-video"></i></div>
+            <div class="status-dot" id="dot"></div>
+        </div>
+    </header>
 
     <main>
-        <header>
-            <div class="page-title" id="page-title">File Transfer</div>
-            <div class="header-actions">
-                <button id="btn-audio" class="call-btn-header" onclick="core.startCall('audio')" title="Voice Call"><i class="fa-solid fa-phone"></i></button>
-                <button id="btn-video" class="call-btn-header" onclick="core.startCall('video')" title="Video Call"><i class="fa-solid fa-video"></i></button>
-                <div class="status-badge"><div class="dot" id="dot"></div><span id="stat">Offline</span></div>
-            </div>
-        </header>
-
         <div id="view-transfer" class="view active">
-            <div class="grid-2">
-                <div class="card drop-zone" onclick="document.getElementById('file').click()">
-                    <i class="fa-solid fa-cloud-arrow-up drop-icon"></i>
-                    <h3 style="margin-bottom: 10px; font-weight: 600;">Tap to Upload</h3>
-                    <p style="color:var(--text-muted);">Secure P2P Channel</p>
-                    <input type="file" id="file" style="display:none" multiple onchange="core.sendFiles(this.files)">
-                </div>
-                <div class="card" style="display:flex; flex-direction:column;">
-                    <h4 style="margin-bottom:20px; color:var(--text-muted); text-transform:uppercase; font-size:0.85rem; letter-spacing:1px;">Activity Log</h4>
-                    <div id="transfer-list" style="flex:1; overflow-y:auto; padding-right:5px;">
-                        <div style="text-align:center; color:#444; margin-top:40px;"><i class="fa-solid fa-clock-rotate-left" style="font-size: 2rem; margin-bottom: 10px;"></i><p>No activity yet.</p></div>
+            <div class="card drop-zone" onclick="document.getElementById('file').click()">
+                <i class="fa-solid fa-cloud-arrow-up" style="font-size: 3rem; color: #555; margin-bottom: 15px;"></i>
+                <h3>Tap to Upload</h3>
+                <p style="color:#888; font-size:0.9rem;">20GB+ Supported</p>
+                <input type="file" id="file" style="display:none" multiple onchange="core.processFiles(this.files)">
+            </div>
+            
+            <div class="card" style="min-height: 200px; display: flex; flex-direction: column; text-align: left;">
+                <h4 style="margin-bottom:15px; color:#888; font-size:0.8rem; letter-spacing:1px;">TRANSFERS</h4>
+                <div id="transfer-list" style="flex:1;">
+                    <div style="text-align:center; color:#444; margin-top:30px;">
+                        <i class="fa-solid fa-clock-rotate-left" style="font-size: 1.5rem; margin-bottom: 10px;"></i>
+                        <p style="font-size:0.9rem;">Empty History</p>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div id="view-connect" class="view">
-            <div class="card" style="max-width:550px; margin:0 auto; text-align:center;">
-                <h3>Your Identity</h3>
-                <div class="qr-wrapper"><div id="qrcode"></div></div>
-                <div class="id-display" id="my-id" onclick="core.copy()">Generating...</div>
-                
-                <button class="btn-primary btn-share" onclick="core.shareLink()" style="margin-bottom: 25px; color: black; background: white;">
-                    <i class="fa-solid fa-share-nodes"></i> Share Connection Link
-                </button>
-                
-                <div style="width:100%; height:1px; background:rgba(255,255,255,0.1); margin-bottom:25px;"></div>
-                <h3 style="margin-bottom:20px; text-align:left;">Connect Remote</h3>
-                <div style="display: flex; gap: 15px;">
-                    <input type="text" id="remote-id" placeholder="Paste ID here">
-                    <button class="btn-primary" style="width: auto;" onclick="core.connect()"><i class="fa-solid fa-link"></i> Connect</button>
+        <div id="view-chat" class="view">
+            <div class="card" style="flex:1; display:flex; flex-direction:column; margin:0; height:100%;">
+                <div id="chat-box" class="chat-box">
+                    <div style="text-align:center; color:#444; margin-top:auto;">Encrypted Chat</div>
+                </div>
+                <div style="display:flex; gap:10px;">
+                    <input type="text" id="chat-in" placeholder="Message..." style="margin:0; border-radius:50px; text-align: left;" onkeypress="if(event.key==='Enter') core.sendChat()">
+                    <button class="btn-primary" style="width:50px; border-radius:50%; margin:0;" onclick="core.sendChat()"><i class="fa-solid fa-paper-plane"></i></button>
                 </div>
             </div>
         </div>
 
-        <div id="view-chat" class="view">
-            <div class="card chat-container">
-                <div id="chat-box" class="chat-box">
-                    <div style="text-align:center; color:#444; margin-top:auto;"><i class="fa-solid fa-lock" style="margin-bottom: 10px;"></i><br>Encrypted Chat</div>
-                </div>
-                <div style="display:flex; gap:15px; align-items: center;">
-                    <input type="text" id="chat-in" placeholder="Type a message..." onkeypress="if(event.key==='Enter') core.sendChat()">
-                    <button class="btn-primary" style="width:60px; height: 55px; border-radius: 18px; padding: 0;" onclick="core.sendChat()"><i class="fa-solid fa-paper-plane" style="font-size: 1.2rem;"></i></button>
-                </div>
+        <div id="view-connect" class="view">
+            <div class="card" style="text-align:center; max-width:500px; margin:0 auto;">
+                <p style="color:#888; margin-bottom:10px;">YOUR ID</p>
+                <div id="my-id" class="id-box" onclick="core.copy()">Loading...</div>
+                
+                <button class="btn-primary btn-share" onclick="core.shareLink()">
+                    <i class="fa-solid fa-share-nodes"></i> Share Link
+                </button>
+                
+                <div style="height:1px; background:rgba(255,255,255,0.1); margin:20px 0;"></div>
+                
+                <p style="color:#888; margin-bottom:10px;">CONNECT FRIEND</p>
+                <input type="text" id="remote-id" placeholder="Paste ID here">
+                <button class="btn-primary" onclick="core.connect()">Connect Device</button>
             </div>
         </div>
     </main>
 
-    <div id="call-modal">
+    <div class="bottom-branding">NECXY DEVELOPER</div>
+
+    <aside>
+        <div class="nav-item active" onclick="ui.view('transfer', this)">
+            <i class="fa-solid fa-file-export"></i>
+            <span class="nav-text">Files</span>
+        </div>
+        <div class="nav-item" onclick="ui.view('chat', this)">
+            <i class="fa-solid fa-comments"></i>
+            <span class="nav-text">Chat</span>
+        </div>
+        <div class="nav-item" onclick="ui.view('connect', this)">
+            <i class="fa-solid fa-link"></i>
+            <span class="nav-text">Link</span>
+        </div>
+    </aside>
+
+    <div id="video-modal">
         <div class="video-wrapper">
             <video id="remote-video" autoplay playsinline></video>
             <div id="audio-placeholder">
@@ -255,11 +283,13 @@
         </div>
     </div>
 
-    <div id="toast">Message</div>
+    <div id="toast-container"></div>
 </div>
 
 <script>
     let peer, conn, localStream, peerCall;
+    const CHUNK_SIZE = 16 * 1024; 
+    let incomingFiles = {};
 
     const ui = {
         view: (id, el) => {
@@ -267,44 +297,54 @@
             document.getElementById('view-'+id).classList.add('active');
             document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
             if(el) el.classList.add('active');
-            const titles = { transfer: 'File Transfer', chat: 'Secure Chat', connect: 'Connect Devices' };
-            document.getElementById('page-title').innerText = titles[id];
         },
         status: (connected) => {
             const dot = document.getElementById('dot');
-            const txt = document.getElementById('stat');
-            const audBtn = document.getElementById('btn-audio');
-            const vidBtn = document.getElementById('btn-video');
-            
+            const btns = document.querySelectorAll('.call-btn');
             if(connected) {
-                dot.classList.add('online'); txt.innerText = "Connected"; txt.style.color = "#00ff88";
-                audBtn.classList.add('active'); vidBtn.classList.add('active');
+                dot.classList.add('online');
+                btns.forEach(b => b.classList.add('active'));
+                ui.toast("Device Connected!", "success");
             } else {
-                dot.classList.remove('online'); txt.innerText = "Offline"; txt.style.color = "#888";
-                audBtn.classList.remove('active'); vidBtn.classList.remove('active');
+                dot.classList.remove('online');
+                btns.forEach(b => b.classList.remove('active'));
             }
         },
-        toast: (msg) => {
-            const t = document.getElementById('toast');
-            t.innerText = msg; t.classList.add('show');
-            setTimeout(() => t.classList.remove('show'), 3000);
+        toast: (msg, type = 'info') => {
+            const container = document.getElementById('toast-container');
+            const el = document.createElement('div');
+            let icon = 'fa-info-circle';
+            if(type === 'success') icon = 'fa-check';
+            if(type === 'error') icon = 'fa-exclamation-triangle';
+            el.className = `toast toast-${type}`;
+            el.innerHTML = `<div class="toast-icon"><i class="fa-solid ${icon}"></i></div><span>${msg}</span>`;
+            container.appendChild(el);
+            requestAnimationFrame(() => el.classList.add('show'));
+            setTimeout(() => { el.classList.remove('show'); setTimeout(() => el.remove(), 300); }, 3000);
         },
-        log: (name, type) => {
-            const h = document.getElementById('transfer-list');
-            if(h.innerText.includes('No activity')) h.innerHTML = '';
-            h.innerHTML = `<div class="transfer-item" style="display:flex; align-items:center; gap:15px; padding:15px; background:var(--glass-light); border-radius:15px; margin-bottom:10px; border:var(--glass-border);">
-                <div style="width:40px; height:40px; background:rgba(255,255,255,0.1); border-radius:10px; display:flex; align-items:center; justify-content:center; color:var(--primary);"><i class="fa-solid ${type==='in'?'fa-download':'fa-upload'}"></i></div>
-                <div><div style="font-weight:600; font-size:0.95rem;">${name}</div><div style="font-size:0.85rem; color:var(--text-muted);">${type==='in'?'Received':'Sent'}</div></div>
-            </div>` + h.innerHTML;
-        },
-        msg: (txt, type) => {
-            const box = document.getElementById('chat-box');
-            if(box.innerText.includes('Encrypted')) box.innerHTML = '';
+        logTransfer: (id, name, type) => {
+            const list = document.getElementById('transfer-list');
+            if(list.innerText.includes('Empty')) list.innerHTML = '';
             const div = document.createElement('div');
-            div.className = `msg ${type}`;
-            div.innerText = txt;
-            box.appendChild(div);
-            box.scrollTop = box.scrollHeight;
+            div.id = `file-${id}`;
+            div.className = 'file-item';
+            div.innerHTML = `
+                <div style="font-weight:600; font-size:0.9rem;">${name}</div>
+                <div class="progress-bar"><div class="progress-fill" style="width:0%"></div></div>
+                <div style="font-size:0.7rem; color:#888; text-align:right; margin-top:2px;">${type === 'out' ? 'Sending...' : 'Receiving...'}</div>`;
+            list.prepend(div);
+        },
+        updateProgress: (id, percent) => {
+            const el = document.getElementById(`file-${id}`);
+            if(el) el.querySelector('.progress-fill').style.width = percent + '%';
+        },
+        finishTransfer: (id) => {
+            const el = document.getElementById(`file-${id}`);
+            if(el) {
+                el.querySelector('.progress-fill').style.background = '#00ff88';
+                el.querySelector('div:last-child').innerText = 'Completed';
+                el.querySelector('div:last-child').style.color = '#00ff88';
+            }
         }
     };
 
@@ -315,33 +355,25 @@
 
             peer.on('open', id => {
                 document.getElementById('my-id').innerText = id;
-                const link = window.location.href.split('?')[0] + "?c=" + id;
-                document.getElementById("qrcode").innerHTML = "";
-                new QRCode(document.getElementById("qrcode"), { text: link, width: 128, height: 128 });
-                
-                // AUTO CONNECT LOGIC
                 const p = new URLSearchParams(window.location.search);
                 if(p.get('c')) {
                     document.getElementById('remote-id').value = p.get('c');
                     ui.view('connect', document.querySelectorAll('.nav-item')[2]);
-                    ui.toast("Auto Connecting...");
-                    setTimeout(core.connect, 1500); // Small delay to ensure init
+                    setTimeout(core.connect, 1000);
                 }
             });
 
-            peer.on('connection', c => { conn = c; core.ready(); });
+            peer.on('connection', c => { conn = c; core.setupConn(); });
             
             peer.on('call', call => {
                 const isVideo = call.metadata && call.metadata.type === 'video';
-                if(confirm(`Incoming ${isVideo ? "Video" : "Voice"} Call... Accept?`)) {
+                if(confirm(`Incoming ${isVideo ? 'Video' : 'Voice'} Call. Accept?`)) {
                     const constraints = isVideo ? {video:true, audio:true} : {video:false, audio:true};
                     navigator.mediaDevices.getUserMedia(constraints).then(stream => {
                         localStream = stream;
                         core.setupCallUI(isVideo);
                         call.answer(stream);
-                        call.on('stream', remStream => {
-                            document.getElementById('remote-video').srcObject = remStream;
-                        });
+                        call.on('stream', rs => document.getElementById('remote-video').srcObject = rs);
                         peerCall = call;
                     });
                 }
@@ -352,7 +384,7 @@
             const id = document.getElementById('my-id').innerText;
             const url = window.location.href.split('?')[0] + "?c=" + id;
             if (navigator.share) {
-                try { await navigator.share({ title: 'Connect to NCX Drop', url: url }); } 
+                try { await navigator.share({ title: 'Connect to NECXY', url: url }); } 
                 catch (err) { core.copyLink(url); }
             } else {
                 core.copyLink(url);
@@ -361,67 +393,98 @@
 
         copyLink: (url) => {
             navigator.clipboard.writeText(url);
-            ui.toast("Link Copied to Clipboard!");
+            ui.toast("Link Copied!", "info");
         },
 
         connect: () => {
             const id = document.getElementById('remote-id').value;
-            if(!id) return ui.toast("Enter ID!");
-            conn = peer.connect(id);
-            conn.on('open', () => { ui.toast("Connected!"); core.ready(); });
+            if(!id) return ui.toast("Enter ID", "error");
+            conn = peer.connect(id, { reliable: true });
+            core.setupConn();
         },
 
-        ready: () => {
-            ui.status(true);
-            ui.view('transfer', document.querySelectorAll('.nav-item')[0]);
-            conn.on('data', d => {
-                if(d.type === 'chat') { ui.msg(d.val, 'other'); ui.toast("Message Recv"); }
-                if(d.type === 'file') {
-                    ui.log(d.name, 'in');
-                    const blob = new Blob([d.file]);
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url; a.download = d.name; a.click();
+        setupConn: () => {
+            conn.on('open', () => { ui.status(true); ui.view('transfer', document.querySelectorAll('.nav-item')[0]); });
+            conn.on('close', () => ui.status(false));
+            
+            conn.on('data', data => {
+                if(data.type === 'chat') {
+                    const box = document.getElementById('chat-box');
+                    box.innerHTML += `<div class="msg other">${data.val}</div>`;
+                    box.scrollTop = box.scrollHeight;
+                    ui.toast("New Message", "info");
+                }
+                else if (data.type === 'header') {
+                    incomingFiles[data.fileId] = { name: data.name, size: data.size, received: 0, chunks: [] };
+                    ui.logTransfer(data.fileId, data.name, 'in');
+                }
+                else if (data.type === 'chunk') {
+                    const f = incomingFiles[data.fileId];
+                    if(!f) return;
+                    f.chunks.push(data.chunk);
+                    f.received += data.chunk.byteLength;
+                    const percent = (f.received / f.size) * 100;
+                    ui.updateProgress(data.fileId, percent);
+                    if(f.received >= f.size) {
+                        ui.finishTransfer(data.fileId);
+                        const blob = new Blob(f.chunks);
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url; a.download = f.name; a.click();
+                        delete incomingFiles[data.fileId];
+                        ui.toast("File Received", "success");
+                    }
                 }
             });
-            conn.on('close', () => ui.status(false));
         },
 
-        sendFiles: (files) => {
-            if(!conn) return ui.toast("Not Connected");
-            Array.from(files).forEach(f => {
-                ui.log(f.name, 'out');
-                const blob = new Blob([f], {type:f.type});
-                conn.send({type:'file', file:blob, name:f.name});
-            });
+        processFiles: async (files) => {
+            if(!conn || !conn.open) return ui.toast("Connect First!", "error");
+            for (const file of files) {
+                const fileId = Math.random().toString(36).substr(2, 9);
+                ui.logTransfer(fileId, file.name, 'out');
+                conn.send({ type: 'header', fileId, name: file.name, size: file.size });
+                
+                let offset = 0;
+                while (offset < file.size) {
+                    const slice = file.slice(offset, offset + CHUNK_SIZE);
+                    const buffer = await slice.arrayBuffer();
+                    if (conn.bufferSize > 10 * 1024 * 1024) await new Promise(r => setTimeout(r, 100));
+                    conn.send({ type: 'chunk', fileId, chunk: buffer });
+                    offset += CHUNK_SIZE;
+                    ui.updateProgress(fileId, (offset/file.size)*100);
+                }
+                ui.finishTransfer(fileId);
+                ui.toast("File Sent", "success");
+            }
         },
 
         sendChat: () => {
             const el = document.getElementById('chat-in');
-            if(!el.value || !conn) return;
+            if(!el.value) return;
+            if(!conn) return ui.toast("Not Connected", "error");
             conn.send({type:'chat', val:el.value});
-            ui.msg(el.value, 'me');
+            const box = document.getElementById('chat-box');
+            box.innerHTML += `<div class="msg me">${el.value}</div>`;
+            box.scrollTop = box.scrollHeight;
             el.value = '';
         },
 
         startCall: (type) => {
-            if(!conn) return ui.toast("Connect First!");
+            if(!conn) return ui.toast("Connect First!", "error");
             const isVideo = type === 'video';
             const constraints = isVideo ? {video:true, audio:true} : {video:false, audio:true};
-            
             navigator.mediaDevices.getUserMedia(constraints).then(stream => {
                 localStream = stream;
                 core.setupCallUI(isVideo);
-                const call = peer.call(conn.peer, stream, {metadata: {type: type}});
-                call.on('stream', remStream => {
-                    document.getElementById('remote-video').srcObject = remStream;
-                });
+                const call = peer.call(conn.peer, stream, {metadata:{type}});
+                call.on('stream', rs => document.getElementById('remote-video').srcObject = rs);
                 peerCall = call;
             });
         },
 
         setupCallUI: (isVideo) => {
-            document.getElementById('call-modal').classList.add('active');
+            document.getElementById('video-modal').classList.add('active');
             document.getElementById('local-video').srcObject = localStream;
             if(isVideo) {
                 document.getElementById('local-video').style.display = 'block';
@@ -435,23 +498,29 @@
         endCall: () => {
             if(peerCall) peerCall.close();
             if(localStream) localStream.getTracks().forEach(t=>t.stop());
-            document.getElementById('call-modal').classList.remove('active');
+            document.getElementById('video-modal').classList.remove('active');
         },
 
         toggleMute: () => {
-            if(localStream) localStream.getAudioTracks()[0].enabled = !localStream.getAudioTracks()[0].enabled;
+            if(localStream) {
+                const track = localStream.getAudioTracks()[0];
+                track.enabled = !track.enabled;
+                ui.toast(track.enabled ? "Microphone On" : "Microphone Muted", "info");
+            }
         },
 
         copy: () => {
             navigator.clipboard.writeText(document.getElementById('my-id').innerText);
-            ui.toast("ID Copied!");
+            ui.toast("ID Copied!", "success");
         }
     };
 
-    const drop = document.querySelector('.drop-zone');
-    drop.addEventListener('dragover', (e)=>{e.preventDefault(); drop.style.borderColor='var(--primary)'});
-    drop.addEventListener('dragleave', ()=>{drop.style.borderColor='rgba(255,255,255,0.1)'});
-    drop.addEventListener('drop', (e)=>{ e.preventDefault(); core.sendFiles(e.dataTransfer.files); });
+    const dz = document.querySelector('.drop-zone');
+    dz.addEventListener('dragover', e => { e.preventDefault(); dz.style.borderColor='var(--primary)'; });
+    dz.addEventListener('drop', e => { 
+        e.preventDefault(); 
+        core.processFiles(e.dataTransfer.files); 
+    });
 
     core.init();
 </script>
