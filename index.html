@@ -5,6 +5,39 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>NECXY Group Ultra</title>
     
+    <meta name="theme-color" content="#050505">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" id="manifest-placeholder">
+    
+    <script>
+        const manifest = {
+            "name": "NECXY Ultra",
+            "short_name": "NECXY",
+            "start_url": ".",
+            "display": "standalone",
+            "background_color": "#050505",
+            "theme_color": "#FF2E2E",
+            "orientation": "portrait",
+            "icons": [
+                {
+                    "src": "https://cdn-icons-png.flaticon.com/512/2936/2936886.png", 
+                    "sizes": "192x192",
+                    "type": "image/png"
+                },
+                {
+                    "src": "https://cdn-icons-png.flaticon.com/512/2936/2936886.png",
+                    "sizes": "512x512",
+                    "type": "image/png"
+                }
+            ]
+        };
+        const stringManifest = JSON.stringify(manifest);
+        const blob = new Blob([stringManifest], {type: 'application/json'});
+        const manifestURL = URL.createObjectURL(blob);
+        document.querySelector('#manifest-placeholder').setAttribute('href', manifestURL);
+    </script>
+
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
@@ -477,7 +510,7 @@
     let activeTransfers = {}; 
     let completedDownloads = {};
     let pings = {}; 
-    // SOUND IS FALSE BY DEFAULT
+    // SOUND DEFAULT: FALSE
     let settings = { theme: '#FF2E2E', autoSave: true, sound: false, vibe: true, wake: false };
     let mediaRecorder, audioChunks = [];
     let html5QrcodeScanner;
@@ -531,7 +564,6 @@
             const modal = document.getElementById('scanner-modal');
             modal.classList.toggle('active', show);
             if(show) {
-                // FIXED: BACK CAMERA ONLY (ENVIRONMENT)
                 if(!html5QrcodeScanner) html5QrcodeScanner = new Html5Qrcode("reader");
                 html5QrcodeScanner.start(
                     { facingMode: "environment" }, 
@@ -577,7 +609,7 @@
             document.getElementById('toast-container').appendChild(el);
             setTimeout(() => el.classList.add('show'), 10);
             setTimeout(() => { el.classList.remove('show'); setTimeout(() => el.remove(), 300); }, 3000);
-            // Beep only on error if sound is off, or if enabled
+            // ONLY BEEP IF SOUND ENABLED OR ERROR
             if(settings.sound || type==='error') core.beep(type==='error'?150:1000, 100, type==='error'?'sawtooth':'sine');
         },
         logTransfer: (id, name, size, isOut) => {
@@ -671,7 +703,7 @@
             
             peer.on('call', call => {
                 core.vibrate(500);
-                core.startRing(); // Always ring on incoming
+                core.startRing(); // ALWAYS RING
                 const type = call.metadata ? call.metadata.type : 'audio';
                 const isVideo = type === 'video' || type === 'screen';
                 
@@ -961,13 +993,13 @@
         
         // --- UTILS ---
         startRing: () => {
-            // Updated Ringtone: Modern Digital "Trring"
+            // NEW RINGTONE: MODERN DIGITAL TRRING
             if(ringInterval) clearInterval(ringInterval);
             const playTone = () => {
                 try {
                     const o = audioCtx.createOscillator();
                     const g = audioCtx.createGain();
-                    o.type = 'triangle'; // Smoother than square
+                    o.type = 'triangle'; 
                     o.frequency.setValueAtTime(600, audioCtx.currentTime);
                     o.frequency.exponentialRampToValueAtTime(800, audioCtx.currentTime + 0.1);
                     o.connect(g);
