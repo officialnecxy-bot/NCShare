@@ -222,6 +222,7 @@
         .call-controls { height: 90px; background: linear-gradient(to top, #000, transparent); display: flex; justify-content: center; align-items: center; gap: 20px; padding-bottom: 10px; }
         .ctrl-btn { width: 50px; height: 50px; border-radius: 50%; border: none; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; cursor: pointer; backdrop-filter: blur(10px); background: rgba(255,255,255,0.1); color:white; }
         .btn-end { background: #ff3b3b; color: white; }
+        .btn-screen { color: #2E86FF; }
 
         /* TOAST */
         #toast-container { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); z-index: 500; display: flex; flex-direction: column; gap: 10px; width: 90%; max-width: 350px; pointer-events: none; }
@@ -232,7 +233,7 @@
         .toast-error { border-left: 3px solid var(--toast-error); }
 
         /* QR SCANNER */
-        #reader { width: 100%; border-radius: 10px; overflow: hidden; }
+        #reader { width: 100%; border-radius: 10px; overflow: hidden; background: black; }
         
         /* TRANSFER UI */
         .drop-zone { border: 2px dashed rgba(255,255,255,0.15); border-radius: 20px; height: 160px; display: flex; flex-direction: column; justify-content: center; align-items: center; background: linear-gradient(180deg, rgba(255,255,255,0.03), transparent); margin-bottom: 20px; cursor: pointer; transition: 0.3s; }
@@ -475,7 +476,7 @@
     let pings = {}; 
     let settings = { theme: '#FF2E2E', autoSave: true, sound: true, vibe: true, wake: false };
     let mediaRecorder, audioChunks = [];
-    let html5QrcodeScanner;
+    let html5QrCode; // Use raw Html5Qrcode for control
     let typingTimeout;
     let wakeLock = null;
 
@@ -514,18 +515,33 @@
                 width: 180, height: 180
             });
         },
+        // --- UPDATED QR SCANNER: BACK CAMERA ONLY ---
         toggleScanner: (show) => {
             const modal = document.getElementById('scanner-modal');
             modal.classList.toggle('active', show);
             if(show) {
-                html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 });
-                html5QrcodeScanner.render((txt) => {
-                    document.getElementById('remote-id').value = txt;
+                if(!html5QrCode) html5QrCode = new Html5Qrcode("reader");
+                
+                // Directly start back camera
+                html5QrCode.start(
+                    { facingMode: "environment" }, 
+                    { fps: 10, qrbox: 250 },
+                    (txt) => {
+                        document.getElementById('remote-id').value = txt;
+                        ui.toggleScanner(false);
+                        core.connect();
+                        html5QrCode.clear();
+                    }
+                ).catch(err => {
+                    console.log(err);
+                    ui.toast("Camera Access Denied or Error", "error");
                     ui.toggleScanner(false);
-                    core.connect();
-                    html5QrcodeScanner.clear();
                 });
-            } else if(html5QrcodeScanner) html5QrcodeScanner.clear();
+            } else {
+                if(html5QrCode && html5QrCode.isScanning) {
+                    html5QrCode.stop().then(() => html5QrCode.clear());
+                }
+            }
         },
         updateCount: () => {
             const list = document.getElementById('member-list');
@@ -557,7 +573,7 @@
             const div = document.createElement('div');
             div.id = `file-${id}`; div.className = 'file-item';
             div.innerHTML = `
-                <div class="file-header"><div class="file-name">${name}</div>${isOut?`<button class="btn-cancel" onclick="core.cancel('${id}')"><i class="fa-solid fa-xmark"></i></button>`:''}</div>
+                <div class="file-header"><div class="file-name">${name}</div>${isOut?`<button class="btn-cancel" onclick="core.cancelTransfer('${id}')"><i class="fa-solid fa-xmark"></i></button>`:''}</div>
                 <div class="progress-bar"><div class="progress-fill" style="width:0%"></div></div>
                 <div class="status-text">${type}</div><div class="manual-dl-area"></div>`;
             document.getElementById('transfer-list').prepend(div);
@@ -629,7 +645,7 @@
                                 call.answer(stream);
                                 core.handleCallStream(call);
                             }).catch(err => {
-                                call.answer(); // Answer even without local stream (for viewing screen share)
+                                call.answer(); 
                                 core.handleCallStream(call);
                             });
                         }}
@@ -789,17 +805,30 @@
              document.getElementById(`file-${id}`).querySelector('.status-text').innerText = 'Saved';
         },
 
-        // --- CALLS ---
+        // --- CALLS WITH CONFIRMATION POPUP ---
         startGroupCall: (video) => {
             if(!Object.keys(connections).length) return ui.toast('No peers', 'error');
-            navigator.mediaDevices.getUserMedia({video:video, audio:true}).then(stream => {
-                localStream = stream;
-                document.getElementById('video-modal').classList.add('active');
-                document.getElementById('local-video').srcObject = stream;
-                Object.values(connections).forEach(c => {
-                    const call = peer.call(c.peer, stream, {metadata:{type:video?'video':'audio'}});
-                    core.handleCallStream(call);
-                });
+            
+            // POPUP CONFIRMATION
+            ui.popup({
+                title: video ? 'Start Video Call?' : 'Start Audio Call?',
+                msg: `You are about to call ${Object.keys(connections).length} member(s).`,
+                icon: video ? '<i class="fa-solid fa-video"></i>' : '<i class="fa-solid fa-phone"></i>',
+                buttons: [
+                    { text: 'Cancel', class: 'secondary' },
+                    { text: 'Start', class: 'primary', cb: () => {
+                        // ACTUAL CALL LOGIC
+                        navigator.mediaDevices.getUserMedia({video:video, audio:true}).then(stream => {
+                            localStream = stream;
+                            document.getElementById('video-modal').classList.add('active');
+                            document.getElementById('local-video').srcObject = stream;
+                            Object.values(connections).forEach(c => {
+                                const call = peer.call(c.peer, stream, {metadata:{type:video?'video':'audio'}});
+                                core.handleCallStream(call);
+                            });
+                        });
+                    }}
+                ]
             });
         },
         
