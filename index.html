@@ -214,15 +214,38 @@
         }
         .btn-danger:active { background: rgba(255, 46, 46, 0.2); transform: scale(0.98); }
 
-        /* VIDEO CALL */
-        .video-grid { flex: 1; width: 100%; padding: 10px; gap: 10px; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); grid-auto-rows: minmax(150px, 1fr); align-content: center; }
-        .vid-wrapper { position: relative; background: #1a1a1a; border-radius: 15px; overflow: hidden; border: 1px solid #333; display: flex; justify-content: center; align-items: center; }
+        /* VIDEO CALL - PICTURE IN PICTURE LAYOUT */
+        .video-grid {
+            flex: 1; width: 100%; padding: 0; position: relative;
+            display: flex; justify-content: center; align-items: center;
+            background: #000; overflow: hidden;
+        }
+        
+        /* Remote video (Big) */
+        .vid-wrapper {
+            width: 100%; height: 100%;
+            display: flex; justify-content: center; align-items: center;
+        }
         .vid-wrapper video { width: 100%; height: 100%; object-fit: cover; }
+        
+        /* Local video (Small, Floating) */
+        #local-vid-wrap {
+            position: absolute;
+            bottom: 120px; right: 20px;
+            width: 110px; height: 150px;
+            border-radius: 15px;
+            border: 2px solid rgba(255,255,255,0.2);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            background: #222;
+            z-index: 100;
+        }
+        #local-vid-wrap video { object-fit: cover; }
+        
         .vid-tag { position: absolute; bottom: 10px; left: 10px; background: rgba(0,0,0,0.6); padding: 4px 8px; border-radius: 5px; font-size: 0.7rem; }
-        .call-controls { height: 90px; background: linear-gradient(to top, #000, transparent); display: flex; justify-content: center; align-items: center; gap: 20px; padding-bottom: 10px; }
+        
+        .call-controls { height: 90px; background: linear-gradient(to top, #000, transparent); display: flex; justify-content: center; align-items: center; gap: 20px; padding-bottom: 10px; position:absolute; bottom:0; width:100%; z-index:200; }
         .ctrl-btn { width: 50px; height: 50px; border-radius: 50%; border: none; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; cursor: pointer; backdrop-filter: blur(10px); background: rgba(255,255,255,0.1); color:white; }
         .btn-end { background: #ff3b3b; color: white; }
-        .btn-screen { color: #2E86FF; }
 
         /* TOAST */
         #toast-container { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); z-index: 500; display: flex; flex-direction: column; gap: 10px; width: 90%; max-width: 350px; pointer-events: none; }
@@ -233,6 +256,7 @@
         .toast-error { border-left: 3px solid var(--toast-error); }
 
         /* QR SCANNER */
+        #scanner-modal .popup-card { width: 95%; max-width: 400px; padding: 15px; position:relative; overflow:hidden; }
         #reader { width: 100%; border-radius: 10px; overflow: hidden; background: black; }
         
         /* TRANSFER UI */
@@ -404,38 +428,10 @@
 
             <div class="settings-section">
                 <div class="sec-title">Data & Files</div>
-                
-                <div class="setting-row">
-                    <div>
-                        <div class="setting-label">Auto Save Files</div>
-                        <div class="setting-desc">Download immediately</div>
-                    </div>
-                    <div class="tgl-switch active" id="sw-autosave" onclick="ui.toggleSwitch('sw-autosave')"></div>
-                </div>
-
-                <div class="setting-row">
-                    <div>
-                        <div class="setting-label">Sound Effects</div>
-                        <div class="setting-desc">App beeps and alerts</div>
-                    </div>
-                    <div class="tgl-switch active" id="sw-sound" onclick="ui.toggleSwitch('sw-sound')"></div>
-                </div>
-
-                <div class="setting-row">
-                    <div>
-                        <div class="setting-label">Haptic Feedback</div>
-                        <div class="setting-desc">Vibrate on messages</div>
-                    </div>
-                    <div class="tgl-switch active" id="sw-vibe" onclick="ui.toggleSwitch('sw-vibe')"></div>
-                </div>
-
-                 <div class="setting-row">
-                    <div>
-                        <div class="setting-label">Keep Screen On</div>
-                        <div class="setting-desc">Prevent sleep during transfer</div>
-                    </div>
-                    <div class="tgl-switch" id="sw-wake" onclick="ui.toggleSwitch('sw-wake', core.toggleWakeLock)"></div>
-                </div>
+                <div class="setting-row"><div><div class="setting-label">Auto Save Files</div><div class="setting-desc">Download immediately</div></div><div class="tgl-switch active" id="sw-autosave" onclick="ui.toggleSwitch('sw-autosave')"></div></div>
+                <div class="setting-row"><div><div class="setting-label">Sound Effects</div><div class="setting-desc">App beeps and alerts</div></div><div class="tgl-switch active" id="sw-sound" onclick="ui.toggleSwitch('sw-sound')"></div></div>
+                <div class="setting-row"><div><div class="setting-label">Haptic Feedback</div><div class="setting-desc">Vibrate on messages</div></div><div class="tgl-switch active" id="sw-vibe" onclick="ui.toggleSwitch('sw-vibe')"></div></div>
+                <div class="setting-row"><div><div class="setting-label">Keep Screen On</div><div class="setting-desc">Prevent sleep during transfer</div></div><div class="tgl-switch" id="sw-wake" onclick="ui.toggleSwitch('sw-wake', core.toggleWakeLock)"></div></div>
             </div>
             
             <div style="margin:20px 0; font-size:0.8rem; color:#666; background:rgba(255,255,255,0.03); padding:10px; border-radius:10px;">
@@ -476,9 +472,10 @@
     let pings = {}; 
     let settings = { theme: '#FF2E2E', autoSave: true, sound: true, vibe: true, wake: false };
     let mediaRecorder, audioChunks = [];
-    let html5QrCode; // Use raw Html5Qrcode for control
+    let html5QrcodeScanner;
     let typingTimeout;
     let wakeLock = null;
+    let ringInterval = null;
 
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
@@ -515,22 +512,19 @@
                 width: 180, height: 180
             });
         },
-        // --- UPDATED QR SCANNER: BACK CAMERA ONLY ---
         toggleScanner: (show) => {
             const modal = document.getElementById('scanner-modal');
             modal.classList.toggle('active', show);
             if(show) {
-                if(!html5QrCode) html5QrCode = new Html5Qrcode("reader");
-                
-                // Directly start back camera
-                html5QrCode.start(
+                if(!html5QrcodeScanner) html5QrcodeScanner = new Html5Qrcode("reader");
+                html5QrcodeScanner.start(
                     { facingMode: "environment" }, 
                     { fps: 10, qrbox: 250 },
                     (txt) => {
                         document.getElementById('remote-id').value = txt;
                         ui.toggleScanner(false);
                         core.connect();
-                        html5QrCode.clear();
+                        html5QrcodeScanner.clear();
                     }
                 ).catch(err => {
                     console.log(err);
@@ -538,8 +532,8 @@
                     ui.toggleScanner(false);
                 });
             } else {
-                if(html5QrCode && html5QrCode.isScanning) {
-                    html5QrCode.stop().then(() => html5QrCode.clear());
+                if(html5QrcodeScanner) {
+                    html5QrcodeScanner.stop().then(() => html5QrcodeScanner.clear());
                 }
             }
         },
@@ -623,6 +617,7 @@
             
             peer.on('call', call => {
                 core.vibrate(500);
+                core.startRing(); // Start Ringtone
                 const type = call.metadata ? call.metadata.type : 'audio';
                 const isVideo = type === 'video' || type === 'screen';
                 
@@ -636,8 +631,9 @@
                     msg: `Incoming ${title}...`,
                     icon: icon,
                     buttons: [
-                        { text: 'Decline', class: 'secondary' },
+                        { text: 'Decline', class: 'secondary', cb: () => { core.stopRing(); call.close(); } },
                         { text: 'Answer', class: 'primary', cb: () => {
+                            core.stopRing(); // Stop Ringtone
                             navigator.mediaDevices.getUserMedia({video: type === 'video', audio: true}).then(stream => {
                                 localStream = stream;
                                 document.getElementById('video-modal').classList.add('active');
@@ -808,8 +804,6 @@
         // --- CALLS WITH CONFIRMATION POPUP ---
         startGroupCall: (video) => {
             if(!Object.keys(connections).length) return ui.toast('No peers', 'error');
-            
-            // POPUP CONFIRMATION
             ui.popup({
                 title: video ? 'Start Video Call?' : 'Start Audio Call?',
                 msg: `You are about to call ${Object.keys(connections).length} member(s).`,
@@ -817,7 +811,6 @@
                 buttons: [
                     { text: 'Cancel', class: 'secondary' },
                     { text: 'Start', class: 'primary', cb: () => {
-                        // ACTUAL CALL LOGIC
                         navigator.mediaDevices.getUserMedia({video:video, audio:true}).then(stream => {
                             localStream = stream;
                             document.getElementById('video-modal').classList.add('active');
@@ -886,12 +879,34 @@
         endGroupCall: () => {
             if(localStream) localStream.getTracks().forEach(t=>t.stop());
             document.getElementById('video-modal').classList.remove('active');
+            core.stopRing();
             Object.values(calls).forEach(c => c.close());
             document.getElementById('video-grid').innerHTML = `<div class="vid-wrapper" id="local-vid-wrap"><video id="local-video" autoplay playsinline muted></video><div class="vid-tag">You</div></div>`;
         },
         toggleMute: () => { if(localStream) localStream.getAudioTracks()[0].enabled = !localStream.getAudioTracks()[0].enabled; },
         
         // --- UTILS ---
+        startRing: () => {
+            if(!settings.sound) return;
+            if(ringInterval) clearInterval(ringInterval);
+            const playTone = () => {
+                const o = audioCtx.createOscillator();
+                const g = audioCtx.createGain();
+                o.type = 'sine';
+                o.frequency.setValueAtTime(440, audioCtx.currentTime); // A4
+                o.frequency.setValueAtTime(554.37, audioCtx.currentTime + 0.1); // C#5
+                o.connect(g);
+                g.connect(audioCtx.destination);
+                o.start();
+                g.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.5);
+                o.stop(audioCtx.currentTime + 0.5);
+            };
+            playTone();
+            ringInterval = setInterval(playTone, 2000);
+        },
+        stopRing: () => {
+            if(ringInterval) { clearInterval(ringInterval); ringInterval = null; }
+        },
         updateSettings: () => {
             settings.autoSave = document.getElementById('sw-autosave').classList.contains('active');
             settings.sound = document.getElementById('sw-sound').classList.contains('active');
