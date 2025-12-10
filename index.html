@@ -736,6 +736,8 @@
                 else if(data.type === 'ping') conn.send({type:'pong', time: data.time});
                 else if(data.type === 'pong') { pings[conn.peer] = Date.now() - data.time; ui.updateCount(); }
                 else if(data.type === 'header') {
+                    // AUTO WAKE LOCK ON RECEIVE
+                    core.toggleWakeLock(true);
                     core.vibrate(100);
                     activeTransfers[data.fileId] = { cancelled: false, type: 'receive' };
                     incomingFiles[data.fileId] = { name: data.name, size: data.size, received: 0, chunks: [], from: conn.peer };
@@ -749,6 +751,7 @@
                         f.chunks.push(data.chunk); f.received += data.chunk.byteLength;
                         ui.updateProgress(data.fileId, f.received, f.size);
                         if(f.received >= f.size) {
+                            core.toggleWakeLock(false); // Transfer done, release lock
                             core.vibrate([100,50,100]);
                             const blob = new Blob(f.chunks);
                             delete incomingFiles[data.fileId];
@@ -767,6 +770,7 @@
                     }
                 }
                 else if (data.type === 'cancel') {
+                    core.toggleWakeLock(false); // Stop wake lock if cancelled
                     if(activeTransfers[data.fileId]) activeTransfers[data.fileId].cancelled = true;
                     if(incomingFiles[data.fileId]) delete incomingFiles[data.fileId];
                     ui.markCancelled(data.fileId);
@@ -815,6 +819,10 @@
         // --- FILES ---
         processFiles: async (files) => {
             if(!Object.keys(connections).length) return ui.popup({title:'Error', msg:'No connections', icon:'!', buttons:[{text:'OK'}]});
+            
+            // AUTO WAKE LOCK ON SEND
+            core.toggleWakeLock(true);
+
             for(const file of files) {
                 const fid = Math.random().toString(36).substr(2,9);
                 activeTransfers[fid] = { cancelled: false, type: 'send' };
@@ -843,6 +851,7 @@
                 }
                 delete activeTransfers[fid]; 
             }
+            core.toggleWakeLock(false); // Release lock
         },
         cancelTransfer: (fid) => {
             if(activeTransfers[fid]) activeTransfers[fid].cancelled = true; 
