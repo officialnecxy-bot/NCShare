@@ -175,7 +175,7 @@
         .btn-pop.primary { background: var(--primary); color: white; }
         .btn-pop.secondary { background: rgba(255,255,255,0.1); color: #fff; }
 
-        /* --- ADVANCED SETTINGS CSS --- */
+        /* --- SETTINGS STYLE --- */
         #settings-content { width: 100%; height: 100%; padding: 25px; background: var(--bg-body); overflow-y:auto; display: flex; flex-direction: column; }
         .settings-section { margin-bottom: 30px; }
         .sec-title { font-size: 0.8rem; color: var(--primary); font-weight: 700; margin-bottom: 15px; letter-spacing: 1px; text-transform: uppercase; }
@@ -184,7 +184,7 @@
         .setting-label { font-size: 1rem; font-weight:500; }
         .setting-desc { font-size: 0.75rem; color: #666; margin-top: 4px; }
         
-        /* New Toggle Switch */
+        /* Toggle Switch */
         .tgl-switch {
             position: relative; width: 50px; height: 28px; background: #333;
             border-radius: 30px; cursor: pointer; transition: 0.3s;
@@ -205,15 +205,8 @@
             color: white; border: none; cursor: pointer; display:flex; align-items:center; justify-content:center;
         }
         .btn-danger {
-            width: 100%;
-            background: rgba(255, 46, 46, 0.1);
-            border: 1px solid rgba(255, 46, 46, 0.3);
-            color: #ff4444;
-            padding: 15px;
-            border-radius: 15px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: 0.2s;
+            width: 100%; background: rgba(255, 46, 46, 0.1); border: 1px solid rgba(255, 46, 46, 0.3);
+            color: #ff4444; padding: 15px; border-radius: 15px; font-weight: 600; cursor: pointer; transition: 0.2s;
             display: flex; align-items: center; justify-content: center; gap: 10px;
         }
         .btn-danger:active { background: rgba(255, 46, 46, 0.2); transform: scale(0.98); }
@@ -226,7 +219,6 @@
         .call-controls { height: 90px; background: linear-gradient(to top, #000, transparent); display: flex; justify-content: center; align-items: center; gap: 20px; padding-bottom: 10px; }
         .ctrl-btn { width: 50px; height: 50px; border-radius: 50%; border: none; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; cursor: pointer; backdrop-filter: blur(10px); background: rgba(255,255,255,0.1); color:white; }
         .btn-end { background: #ff3b3b; color: white; }
-        .btn-screen { color: #2E86FF; }
 
         /* TOAST */
         #toast-container { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); z-index: 500; display: flex; flex-direction: column; gap: 10px; width: 90%; max-width: 350px; pointer-events: none; }
@@ -612,19 +604,32 @@
             
             peer.on('call', call => {
                 core.vibrate(500);
-                const isVideo = call.metadata && call.metadata.type === 'video';
+                const type = call.metadata ? call.metadata.type : 'audio';
+                const isVideo = type === 'video' || type === 'screen';
+                
+                // FIXED: Better label for screen share
+                let title = 'Voice Call';
+                let icon = '<i class="fa-solid fa-phone-volume"></i>';
+                if(type === 'video') { title = 'Video Call'; icon = '<i class="fa-solid fa-video"></i>'; }
+                if(type === 'screen') { title = 'Screen Share'; icon = '<i class="fa-solid fa-desktop"></i>'; }
+
                 ui.popup({
-                    title: isVideo ? 'Video Call' : 'Voice Call',
-                    msg: `Incoming group call...`,
-                    icon: '<i class="fa-solid fa-phone-volume"></i>',
+                    title: title,
+                    msg: `Incoming ${title}...`,
+                    icon: icon,
                     buttons: [
                         { text: 'Decline', class: 'secondary' },
                         { text: 'Answer', class: 'primary', cb: () => {
-                            navigator.mediaDevices.getUserMedia({video: isVideo, audio: true}).then(stream => {
+                            // If screen share, answer with audio only so we can talk
+                            navigator.mediaDevices.getUserMedia({video: type === 'video', audio: true}).then(stream => {
                                 localStream = stream;
                                 document.getElementById('video-modal').classList.add('active');
                                 document.getElementById('local-video').srcObject = stream;
                                 call.answer(stream);
+                                core.handleCallStream(call);
+                            }).catch(err => {
+                                // Fallback if no cam/mic (e.g. just watching screen)
+                                call.answer();
                                 core.handleCallStream(call);
                             });
                         }}
@@ -799,6 +804,9 @@
         },
         startScreenShare: () => {
              if(!Object.keys(connections).length) return ui.toast('No peers', 'error');
+             // Try to get display media
+             if(!navigator.mediaDevices.getDisplayMedia) return ui.popup({title:'Error', msg:'Screen share not supported on this device/browser.', icon:'!', buttons:[{text:'OK'}]});
+
              navigator.mediaDevices.getDisplayMedia({ video: true, audio: true }).then(stream => {
                  localStream = stream;
                  document.getElementById('video-modal').classList.add('active');
@@ -808,23 +816,30 @@
                      core.handleCallStream(call);
                  });
                  stream.getVideoTracks()[0].onended = () => { core.endGroupCall(); };
-             });
+             }).catch(err => ui.toast('Screen share cancelled', 'error'));
         },
         handleCallStream: (call) => {
             calls[call.peer] = call;
+            // FIXED: If video element exists, update source instead of creating new
             call.on('stream', rs => core.addVideo(rs, call.peer));
             call.on('close', () => core.removeVideo(call.peer));
             call.on('error', () => core.removeVideo(call.peer));
         },
         addVideo: (stream, peerId) => {
-            if(document.getElementById(`vid-wrap-${peerId}`)) return;
-            const grid = document.getElementById('video-grid');
-            const wrap = document.createElement('div');
-            wrap.className = 'vid-wrapper';
-            wrap.id = `vid-wrap-${peerId}`;
-            wrap.innerHTML = `<video id="vid-${peerId}" autoplay playsinline></video><div class="vid-tag">${peerId.substr(0,4)}..</div>`;
-            grid.appendChild(wrap);
-            document.getElementById(`vid-${peerId}`).srcObject = stream;
+            let vid = document.getElementById(`vid-${peerId}`);
+            if(vid) {
+                // Update existing
+                vid.srcObject = stream;
+            } else {
+                // Create new
+                const grid = document.getElementById('video-grid');
+                const wrap = document.createElement('div');
+                wrap.className = 'vid-wrapper';
+                wrap.id = `vid-wrap-${peerId}`;
+                wrap.innerHTML = `<video id="vid-${peerId}" autoplay playsinline></video><div class="vid-tag">${peerId.substr(0,4)}..</div>`;
+                grid.appendChild(wrap);
+                document.getElementById(`vid-${peerId}`).srcObject = stream;
+            }
         },
         removeVideo: (peerId) => {
             const el = document.getElementById(`vid-wrap-${peerId}`);
