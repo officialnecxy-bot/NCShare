@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>NECXY SHARE</title>
+    <title>NECXY Group Ultra</title>
     
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -18,6 +18,7 @@
             --bg-body: #050505;
             --primary: #FF2E2E; 
             --primary-glow: rgba(255, 46, 46, 0.5);
+            --success: #00ff88;
             --glass-panel: rgba(20, 20, 20, 0.95);
             --glass-border: 1px solid rgba(255, 255, 255, 0.1);
             --glass-light: rgba(255, 255, 255, 0.05);
@@ -220,28 +221,20 @@
             display: flex; justify-content: center; align-items: center;
             background: #000; overflow: hidden;
         }
-        
-        .vid-wrapper {
-            width: 100%; height: 100%;
-            display: flex; justify-content: center; align-items: center;
-        }
+        .vid-wrapper { width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; }
         .vid-wrapper video { width: 100%; height: 100%; object-fit: cover; }
         
-        /* Local Video Floating */
         #local-vid-wrap {
-            position: absolute;
-            bottom: 120px; right: 20px;
+            position: absolute; bottom: 120px; right: 20px;
             width: 110px; height: 150px;
             border-radius: 15px;
             border: 2px solid rgba(255,255,255,0.2);
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            background: #222;
-            z-index: 100;
+            background: #222; z-index: 100;
         }
         #local-vid-wrap video { object-fit: cover; }
         
         .vid-tag { position: absolute; bottom: 10px; left: 10px; background: rgba(0,0,0,0.6); padding: 4px 8px; border-radius: 5px; font-size: 0.7rem; }
-        
         .call-controls { height: 90px; background: linear-gradient(to top, #000, transparent); display: flex; justify-content: center; align-items: center; gap: 20px; padding-bottom: 10px; position:absolute; bottom:0; width:100%; z-index:200; }
         .ctrl-btn { width: 50px; height: 50px; border-radius: 50%; border: none; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; cursor: pointer; backdrop-filter: blur(10px); background: rgba(255,255,255,0.1); color:white; }
         .btn-end { background: #ff3b3b; color: white; }
@@ -258,27 +251,32 @@
         #scanner-modal .popup-card { width: 95%; max-width: 400px; padding: 15px; position:relative; overflow:hidden; }
         #reader { width: 100%; border-radius: 10px; overflow: hidden; background: black; }
         
-        /* TRANSFER UI */
+        /* TRANSFER UI - COLOR CODED */
         .drop-zone { border: 2px dashed rgba(255,255,255,0.15); border-radius: 20px; height: 160px; display: flex; flex-direction: column; justify-content: center; align-items: center; background: linear-gradient(180deg, rgba(255,255,255,0.03), transparent); margin-bottom: 20px; cursor: pointer; transition: 0.3s; }
-        .file-item { background: rgba(255,255,255,0.03); padding: 12px; border-radius: 12px; margin-bottom: 8px; display: flex; flex-direction: column; gap: 5px; text-align: left; border: 1px solid rgba(255,255,255,0.05); position: relative; }
+        
+        .file-item { padding: 12px; border-radius: 12px; margin-bottom: 8px; display: flex; flex-direction: column; gap: 5px; text-align: left; position: relative; border: 1px solid rgba(255,255,255,0.1); }
+        
+        /* SENT: RED Theme */
+        .file-item.sent { border-color: rgba(255, 46, 46, 0.3); background: rgba(255, 46, 46, 0.05); }
+        .file-item.sent .progress-fill { background: var(--primary); }
+        
+        /* RECEIVED: GREEN Theme */
+        .file-item.received { border-color: rgba(0, 255, 136, 0.3); background: rgba(0, 255, 136, 0.05); }
+        .file-item.received .progress-fill { background: var(--success); }
+
         .file-header { display: flex; justify-content: space-between; align-items: center; }
         .file-name { font-weight: 600; font-size: 0.8rem; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; max-width: 80%; }
-        .progress-bar { height: 3px; background: #333; border-radius: 2px; width: 100%; overflow: hidden; margin-top: 5px; }
-        .progress-fill { height: 100%; background: var(--primary); width: 0%; transition: width 0.2s; }
+        .progress-bar { height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; width: 100%; overflow: hidden; margin-top: 5px; }
+        .progress-fill { height: 100%; width: 0%; transition: width 0.2s; }
         
-        /* Cancel Button Fix: Applied universally to sender and receiver */
-        .btn-cancel { 
-            background: rgba(255,255,255,0.1); border: none; color: #ff4444; 
-            cursor: pointer; font-size: 0.9rem; padding: 6px; border-radius:50%; 
-            display:flex; align-items:center; justify-content:center; width:28px; height:28px;
-        }
+        .btn-cancel { background: rgba(255,255,255,0.1); border: none; color: #ff4444; cursor: pointer; font-size: 0.9rem; padding: 6px; border-radius:50%; display:flex; align-items:center; justify-content:center; width:28px; height:28px; }
         .btn-cancel:hover { background: rgba(255, 46, 46, 0.2); }
-        .cancelled .file-name { text-decoration: line-through; color: #777; }
-        .cancelled .progress-fill { background: #444; }
-
-        .status-text { font-size:0.7rem; color:#888; text-align:right; }
+        
+        .meta-row { display:flex; justify-content:space-between; align-items:center; margin-top:4px; font-size:0.7rem; color:#888; }
         .manual-dl-area { margin-top:5px; text-align:right; }
         .btn-mini { padding: 4px 12px; font-size: 0.7rem; width: auto; }
+        .cancelled .file-name { text-decoration: line-through; color: #777; }
+        .cancelled .progress-fill { background: #444 !important; }
         
         /* PING */
         .ping-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 5px; }
@@ -437,38 +435,10 @@
 
             <div class="settings-section">
                 <div class="sec-title">Data & Files</div>
-                
-                <div class="setting-row">
-                    <div>
-                        <div class="setting-label">Auto Save Files</div>
-                        <div class="setting-desc">Download immediately</div>
-                    </div>
-                    <div class="tgl-switch active" id="sw-autosave" onclick="ui.toggleSwitch('sw-autosave')"></div>
-                </div>
-
-                <div class="setting-row">
-                    <div>
-                        <div class="setting-label">Sound Effects</div>
-                        <div class="setting-desc">App beeps and alerts</div>
-                    </div>
-                    <div class="tgl-switch active" id="sw-sound" onclick="ui.toggleSwitch('sw-sound')"></div>
-                </div>
-
-                <div class="setting-row">
-                    <div>
-                        <div class="setting-label">Haptic Feedback</div>
-                        <div class="setting-desc">Vibrate on messages</div>
-                    </div>
-                    <div class="tgl-switch active" id="sw-vibe" onclick="ui.toggleSwitch('sw-vibe')"></div>
-                </div>
-
-                 <div class="setting-row">
-                    <div>
-                        <div class="setting-label">Keep Screen On</div>
-                        <div class="setting-desc">Prevent sleep during transfer</div>
-                    </div>
-                    <div class="tgl-switch" id="sw-wake" onclick="ui.toggleSwitch('sw-wake', core.toggleWakeLock)"></div>
-                </div>
+                <div class="setting-row"><div><div class="setting-label">Auto Save Files</div><div class="setting-desc">Download immediately</div></div><div class="tgl-switch active" id="sw-autosave" onclick="ui.toggleSwitch('sw-autosave')"></div></div>
+                <div class="setting-row"><div><div class="setting-label">Sound Effects</div><div class="setting-desc">App beeps and alerts</div></div><div class="tgl-switch active" id="sw-sound" onclick="ui.toggleSwitch('sw-sound')"></div></div>
+                <div class="setting-row"><div><div class="setting-label">Haptic Feedback</div><div class="setting-desc">Vibrate on messages</div></div><div class="tgl-switch active" id="sw-vibe" onclick="ui.toggleSwitch('sw-vibe')"></div></div>
+                <div class="setting-row"><div><div class="setting-label">Keep Screen On</div><div class="setting-desc">Prevent sleep during transfer</div></div><div class="tgl-switch" id="sw-wake" onclick="ui.toggleSwitch('sw-wake', core.toggleWakeLock)"></div></div>
             </div>
             
             <div style="margin:20px 0; font-size:0.8rem; color:#666; background:rgba(255,255,255,0.03); padding:10px; border-radius:10px;">
@@ -504,8 +474,7 @@
     let connections = {}; 
     let calls = {};       
     let incomingFiles = {}; 
-    // State Tracking
-    let activeTransfers = {}; // { fid: { cancelled: bool, type: 'send'/'rec' } }
+    let activeTransfers = {}; 
     let completedDownloads = {};
     let pings = {}; 
     let settings = { theme: '#FF2E2E', autoSave: true, sound: true, vibe: true, wake: false };
@@ -516,6 +485,13 @@
     let ringInterval = null;
 
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    const formatBytes = (bytes) => {
+        if(bytes === 0) return '0 B';
+        const sizes = ['B', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(1024));
+        return parseFloat((bytes / Math.pow(1024, i)).toFixed(2)) + ' ' + sizes[i];
+    };
 
     // --- UI CONTROLLER ---
     const ui = {
@@ -554,10 +530,10 @@
             const modal = document.getElementById('scanner-modal');
             modal.classList.toggle('active', show);
             if(show) {
-                // FORCE BACK CAMERA
+                // FIXED: BACK CAMERA ONLY (ENVIRONMENT)
                 if(!html5QrcodeScanner) html5QrcodeScanner = new Html5Qrcode("reader");
                 html5QrcodeScanner.start(
-                    { facingMode: "environment" }, // Exact constraint
+                    { facingMode: "environment" }, 
                     { fps: 10, qrbox: 250 },
                     (txt) => {
                         document.getElementById('remote-id').value = txt;
@@ -567,7 +543,7 @@
                     }
                 ).catch(err => {
                     console.log(err);
-                    ui.toast("Camera Error / Permission Denied", "error");
+                    ui.toast("Camera Access Denied", "error");
                     ui.toggleScanner(false);
                 });
             } else {
@@ -602,17 +578,21 @@
             setTimeout(() => { el.classList.remove('show'); setTimeout(() => el.remove(), 300); }, 3000);
             core.beep(type==='error'?150:600, 100, type==='error'?'sawtooth':'sine');
         },
-        logTransfer: (id, name, type) => {
-            // Always show cancel button initially
+        logTransfer: (id, name, size, isOut) => {
+            const cls = isOut ? 'sent' : 'received';
             const div = document.createElement('div');
-            div.id = `file-${id}`; div.className = 'file-item';
+            div.id = `file-${id}`; div.className = `file-item ${cls}`;
             div.innerHTML = `
                 <div class="file-header">
                     <div class="file-name">${name}</div>
                     <button class="btn-cancel" onclick="core.cancelTransfer('${id}')"><i class="fa-solid fa-xmark"></i></button>
                 </div>
                 <div class="progress-bar"><div class="progress-fill" style="width:0%"></div></div>
-                <div class="status-text">${type}</div><div class="manual-dl-area"></div>`;
+                <div class="meta-row">
+                    <span class="status-text">Waiting...</span>
+                    <span class="size-text">0 / ${formatBytes(size)}</span>
+                </div>
+                <div class="manual-dl-area"></div>`;
             document.getElementById('transfer-list').prepend(div);
         },
         markCancelled: (id) => {
@@ -620,22 +600,27 @@
             if(el) {
                 el.classList.add('cancelled');
                 el.querySelector('.status-text').innerText = 'Cancelled';
-                el.querySelector('.btn-cancel').remove();
+                if(el.querySelector('.btn-cancel')) el.querySelector('.btn-cancel').remove();
             }
         },
         showDL: (id, name) => {
              const el = document.getElementById(`file-${id}`);
              if(el) {
-                 el.querySelector('.btn-cancel').remove(); // remove cancel when done
+                 if(el.querySelector('.btn-cancel')) el.querySelector('.btn-cancel').remove();
                  el.querySelector('.manual-dl-area').innerHTML = `<button class="btn-primary btn-mini" onclick="core.dl('${id}','${name}')">Download</button>`;
              }
         },
-        updateProgress: (id, percent) => {
+        updateProgress: (id, loaded, total) => {
             const el = document.getElementById(`file-${id}`);
             if(el) {
+                const percent = (loaded / total) * 100;
                 el.querySelector('.progress-fill').style.width = percent + '%';
+                el.querySelector('.size-text').innerText = `${formatBytes(loaded)} / ${formatBytes(total)}`;
                 if(percent >= 100) {
                      if(el.querySelector('.btn-cancel')) el.querySelector('.btn-cancel').remove();
+                     el.querySelector('.status-text').innerText = 'Completed';
+                } else {
+                     el.querySelector('.status-text').innerText = 'Transferring...';
                 }
             }
         },
@@ -754,20 +739,20 @@
                     core.vibrate(100);
                     activeTransfers[data.fileId] = { cancelled: false, type: 'receive' };
                     incomingFiles[data.fileId] = { name: data.name, size: data.size, received: 0, chunks: [], from: conn.peer };
-                    ui.logTransfer(data.fileId, data.name, `Receiving...`);
+                    ui.logTransfer(data.fileId, data.name, data.size, false);
                 }
                 else if(data.type === 'chunk') {
-                    if (activeTransfers[data.fileId] && activeTransfers[data.fileId].cancelled) return; // Ignore chunks if cancelled
+                    if (activeTransfers[data.fileId] && activeTransfers[data.fileId].cancelled) return; 
 
                     const f = incomingFiles[data.fileId];
                     if(f) {
                         f.chunks.push(data.chunk); f.received += data.chunk.byteLength;
-                        ui.updateProgress(data.fileId, (f.received/f.size)*100);
+                        ui.updateProgress(data.fileId, f.received, f.size);
                         if(f.received >= f.size) {
                             core.vibrate([100,50,100]);
                             const blob = new Blob(f.chunks);
                             delete incomingFiles[data.fileId];
-                            delete activeTransfers[data.fileId]; // Clean up
+                            delete activeTransfers[data.fileId];
                             if(settings.autoSave) {
                                 const url = URL.createObjectURL(blob);
                                 const a = document.createElement('a'); a.href = url; a.download = f.name; a.click();
@@ -782,7 +767,6 @@
                     }
                 }
                 else if (data.type === 'cancel') {
-                    // Received cancel signal from peer
                     if(activeTransfers[data.fileId]) activeTransfers[data.fileId].cancelled = true;
                     if(incomingFiles[data.fileId]) delete incomingFiles[data.fileId];
                     ui.markCancelled(data.fileId);
@@ -828,27 +812,27 @@
             el.value = '';
         },
 
-        // --- FILES (FIXED CANCEL) ---
+        // --- FILES ---
         processFiles: async (files) => {
             if(!Object.keys(connections).length) return ui.popup({title:'Error', msg:'No connections', icon:'!', buttons:[{text:'OK'}]});
             for(const file of files) {
                 const fid = Math.random().toString(36).substr(2,9);
                 activeTransfers[fid] = { cancelled: false, type: 'send' };
                 
-                ui.logTransfer(fid, file.name, 'Sending...');
+                ui.logTransfer(fid, file.name, file.size, true);
                 
                 const peers = Object.values(connections);
                 peers.forEach(c => c.send({type:'header', fileId:fid, name:file.name, size:file.size}));
                 
                 let offset = 0;
                 while(offset < file.size) {
-                    if(activeTransfers[fid].cancelled) break; // Check flag
+                    if(activeTransfers[fid].cancelled) break; 
                     
                     const chunk = await file.slice(offset, offset + CHUNK_SIZE).arrayBuffer();
                     peers.forEach(c => c.send({type:'chunk', fileId:fid, chunk:chunk}));
                     
                     offset += CHUNK_SIZE;
-                    ui.updateProgress(fid, (offset/file.size)*100);
+                    ui.updateProgress(fid, offset, file.size);
                     if(peers.length > 2) await new Promise(r=>setTimeout(r,10));
                 }
                 
@@ -857,16 +841,12 @@
                     const btn = document.getElementById(`file-${fid}`).querySelector('.btn-cancel');
                     if(btn) btn.remove();
                 }
-                delete activeTransfers[fid]; // Cleanup
+                delete activeTransfers[fid]; 
             }
         },
         cancelTransfer: (fid) => {
-            // Logic for "My Side" Cancel
-            if(activeTransfers[fid]) {
-                activeTransfers[fid].cancelled = true; // Stop loop if sending
-            }
+            if(activeTransfers[fid]) activeTransfers[fid].cancelled = true; 
             ui.markCancelled(fid);
-            // Notify peer
             Object.values(connections).forEach(c => c.send({type:'cancel', fileId:fid}));
         },
         dl: (id, name) => {
@@ -903,6 +883,7 @@
             });
         },
         
+        // --- SCREEN SHARE WITH CONFIRMATION POPUP ---
         startScreenShare: () => {
              if(!Object.keys(connections).length) return ui.toast('No peers', 'error');
              if(!navigator.mediaDevices.getDisplayMedia) return ui.popup({title:'Error', msg:'Not supported on this device.', icon:'<i class="fa-solid fa-ban"></i>', buttons:[{text:'OK'}]});
