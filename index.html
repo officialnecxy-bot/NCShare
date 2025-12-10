@@ -3,23 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>NECXY Group Drop</title>
+    <title>NECXY Group Ultra</title>
+    
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
-        /* --- THEME --- */
+        /* --- THEME VARIABLES --- */
         :root {
             --bg-body: #050505;
-            --primary: #FF2E2E;
+            --primary: #FF2E2E; /* Default Red */
             --primary-glow: rgba(255, 46, 46, 0.5);
             --glass-panel: rgba(20, 20, 20, 0.95);
             --glass-border: 1px solid rgba(255, 255, 255, 0.1);
             --glass-light: rgba(255, 255, 255, 0.05);
             --nav-glass: rgba(10, 10, 10, 0.85);
             --text-main: #FFFFFF;
-            --text-muted: #888;
             --toast-success: #00ff88;
             --toast-error: #ff4444;
             --toast-info: #2E86FF;
@@ -32,7 +35,8 @@
             background: var(--bg-body); color: var(--text-main);
             height: 100dvh; width: 100vw;
             display: flex; justify-content: center; align-items: center; overflow: hidden;
-            background-image: radial-gradient(circle at 50% 0%, rgba(255, 46, 46, 0.1), transparent 60%);
+            background-image: radial-gradient(circle at 50% 0%, var(--primary-glow), transparent 60%);
+            transition: background 0.5s;
         }
 
         #app {
@@ -54,21 +58,18 @@
         .online-counter { font-size: 0.7rem; background: #333; padding: 2px 8px; border-radius: 10px; color: #aaa; }
         
         .header-actions { display: flex; gap: 10px; align-items: center; }
-        
-        .call-btn {
+        .btn-setting {
             width: 40px; height: 40px; border-radius: 50%; border: var(--glass-border);
-            background: rgba(255,255,255,0.05); color: #666; display: flex; align-items: center; justify-content: center;
-            font-size: 0.9rem; transition: 0.3s;
+            background: rgba(255,255,255,0.05); color: #fff; display: flex; align-items: center; justify-content: center;
+            font-size: 1rem; cursor: pointer; transition: 0.3s;
         }
-        .call-btn.active { background: rgba(255, 46, 46, 0.2); color: var(--primary); border-color: var(--primary); cursor: pointer; box-shadow: 0 0 15px rgba(255, 46, 46, 0.2); }
+        .btn-setting:hover { background: var(--primary); border-color:var(--primary); box-shadow: 0 0 15px var(--primary-glow); }
 
-        /* --- CONTENT AREA --- */
+        /* --- CONTENT --- */
         main { flex: 1; position: relative; overflow: hidden; width: 100%; }
-        
         .view {
             position: absolute; inset: 0; padding: 20px; overflow-y: auto;
-            display: none; flex-direction: column; 
-            padding-bottom: 110px; 
+            display: none; flex-direction: column; padding-bottom: 110px; 
         }
         .view.active { display: flex; animation: fadeIn 0.3s ease-out; }
         @keyframes fadeIn { from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:translateY(0);} }
@@ -84,7 +85,6 @@
             display: flex; justify-content: space-evenly; align-items: center;
             z-index: 50; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
-
         .nav-item {
             display: flex; align-items: center; justify-content: center;
             color: #666; font-size: 1.2rem; height: 100%; width: 60px; transition: 0.3s;
@@ -97,91 +97,136 @@
         }
 
         /* --- UI COMPONENTS --- */
-        .card { 
-            background: var(--glass-light); border: var(--glass-border); 
-            border-radius: 20px; padding: 20px; margin-bottom: 15px; text-align: center; 
-        }
-        
+        .card { background: var(--glass-light); border: var(--glass-border); border-radius: 20px; padding: 20px; margin-bottom: 15px; text-align: center; }
         .btn-primary {
             width: 100%; padding: 14px; border: none; border-radius: 14px;
             background: var(--primary); color: white; font-weight: 600; font-size: 1rem;
             margin-top: 10px; cursor: pointer; transition: 0.2s;
         }
         .btn-primary:active { transform: scale(0.96); }
-        .btn-share { background: white; color: black; }
-
+        
         input {
             width: 100%; padding: 15px; background: rgba(0,0,0,0.4); border: var(--glass-border);
             border-radius: 14px; color: white; margin-bottom: 10px; font-size: 1rem; text-align: center;
         }
         input:focus { border-color: var(--primary); }
 
+        /* --- ACTION GRID --- */
+        .action-grid { display: flex; gap: 10px; margin-bottom: 15px; }
+        .action-box {
+            flex: 1; background: var(--glass-light); border: var(--glass-border);
+            border-radius: 15px; padding: 15px 5px; text-align: center; cursor: pointer;
+            transition: 0.3s; display: flex; flex-direction: column; align-items: center; gap: 5px;
+        }
+        .action-box:active { transform: scale(0.95); background: rgba(255,255,255,0.1); }
+        .action-box i { font-size: 1.2rem; color: var(--primary); margin-bottom: 2px; }
+        .action-box span { font-size: 0.7rem; color: #aaa; font-weight: 500; }
+
+        /* ID & QR UI */
+        .id-container { display:flex; gap:10px; align-items:center; }
         .id-box {
-            font-family: monospace; font-size: 1.4rem; color: var(--primary); padding: 15px; 
-            border: 1px dashed rgba(255, 46, 46, 0.5); border-radius: 12px; background: rgba(255, 46, 46, 0.05); 
-            margin: 15px 0; cursor: pointer; user-select: all; letter-spacing: 1px;
+            flex:1; font-family: monospace; font-size: 1.2rem; color: var(--primary); padding: 15px; 
+            border: 1px dashed rgba(255, 255, 255, 0.2); border-radius: 12px; background: rgba(255, 255, 255, 0.05); 
+            cursor: pointer; user-select: all; letter-spacing: 1px; overflow:hidden;
         }
+        .btn-qr { width: 50px; height: 50px; border-radius:12px; border:var(--glass-border); background:rgba(255,255,255,0.05); color:white; font-size:1.2rem; cursor:pointer; }
+        .btn-share { background: white; color: black; }
 
-        /* TRANSFER UI */
-        .drop-zone {
-            border: 2px dashed rgba(255,255,255,0.15); border-radius: 20px; height: 200px;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            background: linear-gradient(180deg, rgba(255,255,255,0.03), transparent); 
-            margin-bottom: 20px; cursor: pointer; transition: 0.3s;
-        }
-        .drop-zone:active { border-color: var(--primary); background: rgba(255,46,46,0.05); }
-        
-        .file-item {
-            background: rgba(255,255,255,0.03); padding: 12px; border-radius: 12px;
-            margin-bottom: 8px; display: flex; flex-direction: column; gap: 5px; text-align: left;
-            border: 1px solid rgba(255,255,255,0.05); position: relative;
-        }
-        .file-header { display: flex; justify-content: space-between; align-items: center; }
-        .file-name { font-weight: 600; font-size: 0.8rem; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; max-width: 80%; }
-        .progress-bar { height: 3px; background: #333; border-radius: 2px; width: 100%; overflow: hidden; margin-top: 5px; }
-        .progress-fill { height: 100%; background: var(--primary); width: 0%; transition: width 0.2s; }
-        
-        /* CANCEL BUTTON */
-        .btn-cancel {
-            background: none; border: none; color: #ff4444; cursor: pointer; 
-            font-size: 0.9rem; padding: 5px; transition: 0.2s; display: flex; align-items: center; justify-content: center;
-        }
-        .btn-cancel:hover { color: white; transform: scale(1.1); }
-        .status-text { font-size:0.7rem; color:#888; text-align:right; }
-        .cancelled .progress-fill { background: #555 !important; }
-        .cancelled .status-text { color: #ff4444; }
-
-        /* CHAT UI */
-        .chat-box { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; padding-right: 5px; }
+        /* --- CHAT ENHANCEMENTS --- */
+        .chat-box { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; margin-bottom: 5px; padding-right: 5px; }
         .msg { padding: 10px 14px; border-radius: 16px; max-width: 85%; font-size: 0.9rem; line-height: 1.4; word-wrap: break-word; text-align: left; }
         .msg.me { align-self: flex-end; background: var(--primary); color: white; border-bottom-right-radius: 2px; }
         .msg.other { align-self: flex-start; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.1); border-bottom-left-radius: 2px; }
         .msg-sender { font-size: 0.65rem; color: rgba(255,255,255,0.5); margin-bottom: 2px; margin-left: 10px;}
+        
+        .chat-input-area { display:flex; gap:10px; align-items:center; position: relative; padding: 10px 0; }
+        .typing-indicator { position: absolute; top: -25px; left: 10px; font-size: 0.7rem; color: var(--primary); opacity:0; transition:0.3s; pointer-events:none;}
+        .typing-indicator.show { opacity: 1; transform: translateY(-5px); }
+        
+        #chat-in { flex: 1; margin: 0; text-align: left; padding-left: 20px; border-radius: 25px; height: 50px; }
+        
+        .btn-circle { 
+            width: 50px; height: 50px; border-radius: 50%; border: var(--glass-border); 
+            background: rgba(255,255,255,0.05); color: white; cursor: pointer; transition: 0.2s;
+            display: flex; justify-content: center; align-items: center; font-size: 1.1rem; flex-shrink: 0;
+        }
+        .btn-circle:active { transform: scale(0.9); }
+        
+        .btn-mic.recording { background: var(--primary); animation: pulse 1s infinite; border-color: var(--primary); }
+        .btn-send { background: var(--primary); border: none; }
+        
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 var(--primary-glow); } 70% { box-shadow: 0 0 0 10px rgba(0,0,0,0); } 100% { box-shadow: 0 0 0 0 rgba(0,0,0,0); } }
 
-        /* GROUP VIDEO CALL GRID */
-        #video-modal { position: absolute; inset: 0; background: #000; z-index: 100; display: none; flex-direction: column; }
-        #video-modal.active { display: flex; }
-        
-        .video-grid {
-            flex: 1; width: 100%; padding: 10px; gap: 10px;
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            grid-auto-rows: minmax(150px, 1fr);
-            align-content: center;
+        audio { height: 30px; max-width: 200px; border-radius: 20px; }
+
+        /* MODALS & POPUPS */
+        .modal-overlay { 
+            position: absolute; inset: 0; background: rgba(0,0,0,0.9); z-index: 2000; 
+            display: none; justify-content: center; align-items: center; opacity: 0; transition: opacity 0.3s;
         }
+        .modal-overlay.active { display: flex; opacity: 1; }
+        .popup-card { width: 85%; max-width: 320px; background: #111; border: 1px solid #333; border-radius: 20px; padding: 25px; text-align: center; transform: scale(0.9); transition: transform 0.3s; }
+        .modal-overlay.active .popup-card { transform: scale(1); }
+        .popup-icon { font-size: 2.5rem; margin-bottom: 15px; color: var(--primary); }
+        .popup-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 10px; color: white; }
+        .popup-msg { font-size: 0.9rem; color: #aaa; margin-bottom: 20px; }
+        .popup-btns { display: flex; gap: 10px; justify-content: center; }
+        .btn-pop { flex: 1; padding: 12px; border-radius: 10px; border: none; font-weight: 600; cursor: pointer; }
+        .btn-pop.primary { background: var(--primary); color: white; }
+        .btn-pop.secondary { background: rgba(255,255,255,0.1); color: #fff; }
+
+        /* --- ADVANCED SETTINGS CSS --- */
+        #settings-content { width: 100%; height: 100%; padding: 25px; background: var(--bg-body); overflow-y:auto; display: flex; flex-direction: column; }
+        .settings-section { margin-bottom: 30px; }
+        .sec-title { font-size: 0.8rem; color: var(--primary); font-weight: 700; margin-bottom: 15px; letter-spacing: 1px; text-transform: uppercase; }
         
-        .vid-wrapper {
-            position: relative; background: #1a1a1a; border-radius: 15px; overflow: hidden; border: 1px solid #333;
-            display: flex; justify-content: center; align-items: center;
+        .setting-row { display:flex; justify-content:space-between; align-items:center; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .setting-label { font-size: 1rem; font-weight:500; }
+        .setting-desc { font-size: 0.75rem; color: #666; margin-top: 4px; }
+        
+        /* New Toggle Switch */
+        .tgl-switch {
+            position: relative; width: 50px; height: 28px; background: #333;
+            border-radius: 30px; cursor: pointer; transition: 0.3s;
         }
+        .tgl-switch::after {
+            content: ''; position: absolute; top: 2px; left: 2px; width: 24px; height: 24px;
+            background: white; border-radius: 50%; transition: 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+        }
+        .tgl-switch.active { background: var(--primary); }
+        .tgl-switch.active::after { transform: translateX(22px); }
+
+        .theme-grid { display:flex; gap:15px; margin-top:10px; }
+        .theme-circle { width:35px; height:35px; border-radius:50%; cursor:pointer; border:2px solid transparent; transition:0.2s; }
+        .theme-circle.active { border-color: white; box-shadow: 0 0 10px var(--primary-glow); transform: scale(1.1); }
+
+        .btn-close-settings {
+            width: 35px; height: 35px; border-radius: 50%; background: rgba(255,255,255,0.1);
+            color: white; border: none; cursor: pointer; display:flex; align-items:center; justify-content:center;
+        }
+        .btn-danger {
+            width: 100%;
+            background: rgba(255, 46, 46, 0.1);
+            border: 1px solid rgba(255, 46, 46, 0.3);
+            color: #ff4444;
+            padding: 15px;
+            border-radius: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+        }
+        .btn-danger:active { background: rgba(255, 46, 46, 0.2); transform: scale(0.98); }
+
+        /* VIDEO CALL */
+        .video-grid { flex: 1; width: 100%; padding: 10px; gap: 10px; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); grid-auto-rows: minmax(150px, 1fr); align-content: center; }
+        .vid-wrapper { position: relative; background: #1a1a1a; border-radius: 15px; overflow: hidden; border: 1px solid #333; display: flex; justify-content: center; align-items: center; }
         .vid-wrapper video { width: 100%; height: 100%; object-fit: cover; }
         .vid-tag { position: absolute; bottom: 10px; left: 10px; background: rgba(0,0,0,0.6); padding: 4px 8px; border-radius: 5px; font-size: 0.7rem; }
-
-        /* Controls */
-        .call-controls { height: 90px; background: linear-gradient(to top, #000, transparent); display: flex; justify-content: center; align-items: center; gap: 30px; padding-bottom: 10px; }
-        .ctrl-btn { width: 55px; height: 55px; border-radius: 50%; border: none; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; cursor: pointer; backdrop-filter: blur(10px); }
+        .call-controls { height: 90px; background: linear-gradient(to top, #000, transparent); display: flex; justify-content: center; align-items: center; gap: 20px; padding-bottom: 10px; }
+        .ctrl-btn { width: 50px; height: 50px; border-radius: 50%; border: none; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; cursor: pointer; backdrop-filter: blur(10px); background: rgba(255,255,255,0.1); color:white; }
         .btn-end { background: #ff3b3b; color: white; }
-        .btn-mute { background: rgba(255,255,255,0.2); color: white; }
+        .btn-screen { color: #2E86FF; }
 
         /* TOAST */
         #toast-container { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); z-index: 500; display: flex; flex-direction: column; gap: 10px; width: 90%; max-width: 350px; pointer-events: none; }
@@ -190,6 +235,27 @@
         .toast-success { border-left: 3px solid var(--toast-success); }
         .toast-info { border-left: 3px solid var(--toast-info); }
         .toast-error { border-left: 3px solid var(--toast-error); }
+
+        /* QR SCANNER */
+        #reader { width: 100%; border-radius: 10px; overflow: hidden; }
+        
+        /* TRANSFER UI */
+        .drop-zone { border: 2px dashed rgba(255,255,255,0.15); border-radius: 20px; height: 160px; display: flex; flex-direction: column; justify-content: center; align-items: center; background: linear-gradient(180deg, rgba(255,255,255,0.03), transparent); margin-bottom: 20px; cursor: pointer; transition: 0.3s; }
+        .file-item { background: rgba(255,255,255,0.03); padding: 12px; border-radius: 12px; margin-bottom: 8px; display: flex; flex-direction: column; gap: 5px; text-align: left; border: 1px solid rgba(255,255,255,0.05); position: relative; }
+        .file-header { display: flex; justify-content: space-between; align-items: center; }
+        .file-name { font-weight: 600; font-size: 0.8rem; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; max-width: 80%; }
+        .progress-bar { height: 3px; background: #333; border-radius: 2px; width: 100%; overflow: hidden; margin-top: 5px; }
+        .progress-fill { height: 100%; background: var(--primary); width: 0%; transition: width 0.2s; }
+        .btn-cancel { background: none; border: none; color: #ff4444; cursor: pointer; font-size: 0.9rem; padding: 5px; }
+        .status-text { font-size:0.7rem; color:#888; text-align:right; }
+        .manual-dl-area { margin-top:5px; text-align:right; }
+        .btn-mini { padding: 4px 12px; font-size: 0.7rem; width: auto; }
+        
+        /* PING */
+        .ping-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 5px; }
+        .ping-green { background: #00ff88; box-shadow: 0 0 5px #00ff88; }
+        .ping-yellow { background: #ffcc00; }
+        .ping-red { background: #ff4444; }
 
         @media (min-width: 769px) {
             #app { border-radius: 20px; height: 90vh; flex-direction: row; }
@@ -205,30 +271,43 @@
 <div id="app">
     <header>
         <div class="page-title">
-            NECXY <span style="color:var(--primary)">GROUP</span>
+            NECXY <span style="color:var(--primary)">ULTRA</span>
             <div class="online-counter" id="peer-count">0 Online</div>
         </div>
         <div class="header-actions">
-            <div class="call-btn" onclick="core.startGroupCall(false)"><i class="fa-solid fa-phone"></i></div>
-            <div class="call-btn" onclick="core.startGroupCall(true)"><i class="fa-solid fa-video"></i></div>
+            <div class="btn-setting" onclick="ui.toggleSettings(true)"><i class="fa-solid fa-gear"></i></div>
         </div>
     </header>
 
     <main>
         <div id="view-transfer" class="view active">
+            
+            <div class="action-grid">
+                <div class="action-box" onclick="core.startGroupCall(false)">
+                    <i class="fa-solid fa-phone"></i>
+                    <span>Audio Call</span>
+                </div>
+                <div class="action-box" onclick="core.startGroupCall(true)">
+                    <i class="fa-solid fa-video"></i>
+                    <span>Video Call</span>
+                </div>
+                <div class="action-box" onclick="core.startScreenShare()">
+                    <i class="fa-solid fa-desktop"></i>
+                    <span>Screen Share</span>
+                </div>
+            </div>
+
             <div class="card drop-zone" onclick="document.getElementById('file').click()">
-                <i class="fa-solid fa-cloud-arrow-up" style="font-size: 3rem; color: #555; margin-bottom: 10px;"></i>
+                <i class="fa-solid fa-cloud-arrow-up" style="font-size: 2.5rem; color: #555; margin-bottom: 10px;"></i>
                 <h3 style="margin-bottom: 5px;">Upload File</h3>
-                <p style="color:#888; font-size:0.8rem;">Send to Everyone</p>
+                <p style="color:#888; font-size:0.8rem;">Tap to Select</p>
                 <input type="file" id="file" style="display:none" multiple onchange="core.processFiles(this.files)">
             </div>
             
             <div class="card" style="flex:1; display:flex; flex-direction:column; text-align: left; overflow:hidden;">
-                <h4 style="margin-bottom:15px; color:#888; font-size:0.75rem; letter-spacing:1px;">TRANSFERS</h4>
+                <h4 style="margin-bottom:15px; color:#888; font-size:0.75rem; letter-spacing:1px;">HISTORY</h4>
                 <div id="transfer-list" style="overflow-y:auto; flex:1;">
-                    <div style="text-align:center; color:#444; margin-top:20px;">
-                        <i class="fa-solid fa-box-open"></i><br>No recent files
-                    </div>
+                    <div style="text-align:center; color:#444; margin-top:20px;">No transfers</div>
                 </div>
             </div>
         </div>
@@ -237,12 +316,14 @@
             <div class="card" style="flex:1; display:flex; flex-direction:column; margin:0; height:100%;">
                 <div id="chat-box" class="chat-box">
                     <div style="text-align:center; color:#444; margin-top:auto; font-size:0.8rem;">
-                        <i class="fa-solid fa-users"></i><br>Group Chat Encrypted
+                        <i class="fa-solid fa-shield-halved"></i><br>Encrypted Chat
                     </div>
                 </div>
-                <div style="display:flex; gap:8px;">
-                    <input type="text" id="chat-in" placeholder="Message group..." style="margin:0; border-radius:50px; text-align: left;" onkeypress="if(event.key==='Enter') core.sendChat()">
-                    <button class="btn-primary" style="width:50px; border-radius:50%; margin:0;" onclick="core.sendChat()"><i class="fa-solid fa-paper-plane"></i></button>
+                <div class="chat-input-area">
+                    <div id="typing-ind" class="typing-indicator">Typing...</div>
+                    <input type="text" id="chat-in" placeholder="Message..." onkeypress="if(event.key==='Enter') core.sendChat()" oninput="core.sendTyping()">
+                    <button id="mic-btn" class="btn-circle btn-mic" onmousedown="core.startRec()" onmouseup="core.stopRec()" ontouchstart="core.startRec()" ontouchend="core.stopRec()"><i class="fa-solid fa-microphone"></i></button>
+                    <button class="btn-circle btn-send" onclick="core.sendChat()"><i class="fa-solid fa-paper-plane"></i></button>
                 </div>
             </div>
         </div>
@@ -250,19 +331,27 @@
         <div id="view-connect" class="view">
             <div class="card" style="max-width:500px; margin:0 auto;">
                 <p style="color:#888; margin-bottom:5px; font-size:0.8rem;">MY ID</p>
-                <div id="my-id" class="id-box" onclick="core.copy()">...</div>
-                <button class="btn-primary btn-share" onclick="core.shareLink()">Share Link</button>
+                <div class="id-container">
+                    <div id="my-id" class="id-box" onclick="core.copy()">Generating...</div>
+                    <button class="btn-qr" onclick="ui.showQR()"><i class="fa-solid fa-qrcode"></i></button>
+                </div>
+                
+                <div style="display:flex; gap:10px; margin-top:10px;">
+                    <button class="btn-primary btn-share" onclick="core.shareLink()">Share Link</button>
+                </div>
                 
                 <div style="height:1px; background:rgba(255,255,255,0.1); margin:20px 0;"></div>
                 
-                <p style="color:#888; margin-bottom:5px; font-size:0.8rem;">ADD MEMBER</p>
-                <input type="text" id="remote-id" placeholder="Paste Member ID">
-                <button class="btn-primary" onclick="core.connect()">Add to Group</button>
+                <p style="color:#888; margin-bottom:5px; font-size:0.8rem;">CONNECT</p>
+                <div class="id-container">
+                    <input type="text" id="remote-id" placeholder="Paste ID" style="margin:0; text-align:left;">
+                    <button class="btn-qr" onclick="ui.toggleScanner(true)"><i class="fa-solid fa-expand"></i></button>
+                </div>
+                <button class="btn-primary" onclick="core.connect()">Connect to ID</button>
 
                 <div style="margin-top:20px; text-align:left;">
-                    <p style="color:#888; font-size:0.8rem;">CONNECTED MEMBERS</p>
-                    <div id="member-list" style="margin-top:10px; display:flex; flex-wrap:wrap; gap:5px;">
-                        </div>
+                    <p style="color:#888; font-size:0.8rem;">MEMBERS</p>
+                    <div id="member-list" style="margin-top:10px; display:flex; flex-wrap:wrap; gap:5px;"></div>
                 </div>
             </div>
         </div>
@@ -274,7 +363,96 @@
         <div class="nav-item" onclick="ui.view('connect', this)"><i class="fa-solid fa-users-gear"></i></div>
     </aside>
 
-    <div id="video-modal">
+    <div id="popup-modal" class="modal-overlay">
+        <div class="popup-card">
+            <div class="popup-icon" id="pop-icon"></div>
+            <div class="popup-title" id="pop-title"></div>
+            <div class="popup-msg" id="pop-msg"></div>
+            <div class="popup-btns" id="pop-btns"></div>
+        </div>
+    </div>
+
+    <div id="qr-modal" class="modal-overlay" onclick="this.classList.remove('active')">
+        <div class="popup-card" style="background: white; color:black;">
+            <div id="qrcode" style="display:flex; justify-content:center; margin:20px 0;"></div>
+            <p style="font-weight:600; font-size:0.9rem;">Scan to Connect</p>
+        </div>
+    </div>
+
+    <div id="scanner-modal" class="modal-overlay">
+        <div class="popup-card" style="width:100%; max-width:400px;">
+            <div id="reader"></div>
+            <button class="btn-pop secondary" style="margin-top:10px;" onclick="ui.toggleScanner(false)">Close</button>
+        </div>
+    </div>
+
+    <div id="settings-modal" class="modal-overlay">
+        <div id="settings-content">
+            <div style="display:flex; justify-content:space-between; margin-bottom:20px;">
+                <h2 style="font-weight:700;">Settings</h2>
+                <button class="btn-close-settings" onclick="ui.toggleSettings(false)"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <div class="settings-section">
+                <div class="sec-title">Personalization</div>
+                <div class="setting-row" style="flex-direction:column; align-items:flex-start;">
+                    <div class="setting-label">Theme Color</div>
+                    <div class="theme-grid">
+                        <div class="theme-circle active" style="background:#FF2E2E" onclick="ui.setTheme('#FF2E2E', this)"></div>
+                        <div class="theme-circle" style="background:#2E86FF" onclick="ui.setTheme('#2E86FF', this)"></div>
+                        <div class="theme-circle" style="background:#00ff88" onclick="ui.setTheme('#00ff88', this)"></div>
+                        <div class="theme-circle" style="background:#FFD700" onclick="ui.setTheme('#FFD700', this)"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <div class="sec-title">Data & Files</div>
+                
+                <div class="setting-row">
+                    <div>
+                        <div class="setting-label">Auto Save Files</div>
+                        <div class="setting-desc">Download immediately</div>
+                    </div>
+                    <div class="tgl-switch active" id="sw-autosave" onclick="ui.toggleSwitch('sw-autosave')"></div>
+                </div>
+
+                <div class="setting-row">
+                    <div>
+                        <div class="setting-label">Sound Effects</div>
+                        <div class="setting-desc">App beeps and alerts</div>
+                    </div>
+                    <div class="tgl-switch active" id="sw-sound" onclick="ui.toggleSwitch('sw-sound')"></div>
+                </div>
+
+                <div class="setting-row">
+                    <div>
+                        <div class="setting-label">Haptic Feedback</div>
+                        <div class="setting-desc">Vibrate on messages</div>
+                    </div>
+                    <div class="tgl-switch active" id="sw-vibe" onclick="ui.toggleSwitch('sw-vibe')"></div>
+                </div>
+
+                 <div class="setting-row">
+                    <div>
+                        <div class="setting-label">Keep Screen On</div>
+                        <div class="setting-desc">Prevent sleep during transfer</div>
+                    </div>
+                    <div class="tgl-switch" id="sw-wake" onclick="ui.toggleSwitch('sw-wake', core.toggleWakeLock)"></div>
+                </div>
+            </div>
+            
+            <div style="margin:20px 0; font-size:0.8rem; color:#666; background:rgba(255,255,255,0.03); padding:10px; border-radius:10px;">
+                System Status: <span id="sys-stat" style="color:white; font-weight:600;">Checking...</span>
+            </div>
+            
+            <button class="btn-danger" onclick="core.clearData()">
+                <i class="fa-solid fa-trash"></i> Clear All Data
+            </button>
+        </div>
+    </div>
+
+    <div id="video-modal" class="modal-overlay">
         <div class="video-grid" id="video-grid">
             <div class="vid-wrapper" id="local-vid-wrap">
                 <video id="local-video" autoplay playsinline muted></video>
@@ -282,7 +460,7 @@
             </div>
         </div>
         <div class="call-controls">
-            <button class="ctrl-btn btn-mute" onclick="core.toggleMute()"><i class="fa-solid fa-microphone"></i></button>
+            <button class="ctrl-btn" onclick="core.toggleMute()"><i class="fa-solid fa-microphone"></i></button>
             <button class="ctrl-btn btn-end" onclick="core.endGroupCall()"><i class="fa-solid fa-phone-slash"></i></button>
         </div>
     </div>
@@ -291,14 +469,24 @@
 </div>
 
 <script>
+    // --- GLOBAL VARIABLES ---
     const CHUNK_SIZE = 16 * 1024;
     let peer, localStream;
-    // Multi-user state
-    let connections = {}; // { peerId: connectionObj }
-    let calls = {};       // { peerId: callObj }
-    let incomingFiles = {}; // { fileId: { ...metadata, chunks: [] } }
-    let activeUploads = {}; // { fileId: { cancelled: boolean } }
+    let connections = {}; 
+    let calls = {};       
+    let incomingFiles = {}; 
+    let activeUploads = {};
+    let completedDownloads = {};
+    let pings = {}; 
+    let settings = { theme: '#FF2E2E', autoSave: true, sound: true, vibe: true, wake: false };
+    let mediaRecorder, audioChunks = [];
+    let html5QrcodeScanner;
+    let typingTimeout;
+    let wakeLock = null;
 
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    // --- UI CONTROLLER ---
     const ui = {
         view: (id, el) => {
             document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
@@ -306,323 +494,376 @@
             document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
             if(el) el.classList.add('active');
         },
+        toggleSettings: (show) => {
+            document.getElementById('settings-modal').classList.toggle('active', show);
+            if(show) core.updateSysStats();
+        },
+        toggleSwitch: (id, cb) => {
+            const el = document.getElementById(id);
+            el.classList.toggle('active');
+            core.updateSettings();
+            if(cb) cb(el.classList.contains('active'));
+        },
+        setTheme: (color, el) => {
+            document.documentElement.style.setProperty('--primary', color);
+            document.documentElement.style.setProperty('--primary-glow', color + '80');
+            document.querySelectorAll('.theme-circle').forEach(c => c.classList.remove('active'));
+            el.classList.add('active');
+            localStorage.setItem('necxy_theme', color);
+        },
+        showQR: () => {
+            document.getElementById('qr-modal').classList.add('active');
+            document.getElementById('qrcode').innerHTML = "";
+            new QRCode(document.getElementById("qrcode"), {
+                text: document.getElementById('my-id').innerText,
+                width: 180, height: 180
+            });
+        },
+        toggleScanner: (show) => {
+            const modal = document.getElementById('scanner-modal');
+            modal.classList.toggle('active', show);
+            if(show) {
+                html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 });
+                html5QrcodeScanner.render((txt) => {
+                    document.getElementById('remote-id').value = txt;
+                    ui.toggleScanner(false);
+                    core.connect();
+                    html5QrcodeScanner.clear();
+                });
+            } else if(html5QrcodeScanner) html5QrcodeScanner.clear();
+        },
         updateCount: () => {
-            const count = Object.keys(connections).length;
-            document.getElementById('peer-count').innerText = `${count} Online`;
-            const btns = document.querySelectorAll('.call-btn');
-            btns.forEach(b => b.classList.toggle('active', count > 0));
-            
-            // Update Member List UI
             const list = document.getElementById('member-list');
             list.innerHTML = '';
             Object.keys(connections).forEach(pid => {
-                list.innerHTML += `<span style="background:#333; padding:4px 8px; border-radius:5px; font-size:0.8rem; border:1px solid #444;">${pid.substr(0,4)}..</span>`;
+                const latency = pings[pid] || 0;
+                let pClass = 'ping-green';
+                if(latency > 150) pClass = 'ping-yellow';
+                if(latency > 300) pClass = 'ping-red';
+                
+                list.innerHTML += `
+                    <div style="background:#222; padding:6px 10px; border-radius:8px; border:1px solid #333; display:flex; align-items:center;">
+                        <span class="ping-dot ${pClass}"></span>
+                        <span style="font-size:0.8rem; color:#ddd;">${pid.substr(0,4)}..</span>
+                    </div>`;
             });
+            document.getElementById('peer-count').innerText = `${Object.keys(connections).length} Online`;
         },
-        toast: (msg, type = 'info') => {
-            const container = document.getElementById('toast-container');
+        toast: (msg, type='info') => {
             const el = document.createElement('div');
             el.className = `toast toast-${type}`;
             el.innerHTML = `<span>${msg}</span>`;
-            container.appendChild(el);
+            document.getElementById('toast-container').appendChild(el);
             setTimeout(() => el.classList.add('show'), 10);
             setTimeout(() => { el.classList.remove('show'); setTimeout(() => el.remove(), 300); }, 3000);
+            core.beep(type==='error'?150:600, 100, type==='error'?'sawtooth':'sine');
         },
-        logTransfer: (id, name, type, isOutgoing = false) => {
-            const list = document.getElementById('transfer-list');
-            if(list.innerText.includes('recent')) list.innerHTML = '';
-            
+        logTransfer: (id, name, type, isOut) => {
             const div = document.createElement('div');
-            div.id = `file-${id}`;
-            div.className = 'file-item';
-            
-            // Added Cancel Button logic
-            const cancelBtn = isOutgoing 
-                ? `<button class="btn-cancel" onclick="core.cancelTransfer('${id}')"><i class="fa-solid fa-xmark"></i></button>` 
-                : '';
-
+            div.id = `file-${id}`; div.className = 'file-item';
             div.innerHTML = `
-                <div class="file-header">
-                    <div class="file-name">${name}</div>
-                    ${cancelBtn}
-                </div>
+                <div class="file-header"><div class="file-name">${name}</div>${isOut?`<button class="btn-cancel" onclick="core.cancel('${id}')"><i class="fa-solid fa-xmark"></i></button>`:''}</div>
                 <div class="progress-bar"><div class="progress-fill" style="width:0%"></div></div>
-                <div class="status-text">${type}</div>`;
-            list.prepend(div);
+                <div class="status-text">${type}</div><div class="manual-dl-area"></div>`;
+            document.getElementById('transfer-list').prepend(div);
+        },
+        showDL: (id, name) => {
+            document.getElementById(`file-${id}`).querySelector('.manual-dl-area').innerHTML = `<button class="btn-primary btn-mini" onclick="core.dl('${id}','${name}')">Download</button>`;
         },
         updateProgress: (id, percent) => {
             const el = document.getElementById(`file-${id}`);
             if(el) el.querySelector('.progress-fill').style.width = percent + '%';
-            if(percent >= 100) {
-                 if(el.querySelector('.btn-cancel')) el.querySelector('.btn-cancel').remove();
-                 el.querySelector('.status-text').innerText = 'Completed';
-            }
         },
-        markCancelled: (id) => {
-            const el = document.getElementById(`file-${id}`);
-            if(el) {
-                el.classList.add('cancelled');
-                el.querySelector('.status-text').innerText = 'Cancelled';
-                if(el.querySelector('.btn-cancel')) el.querySelector('.btn-cancel').remove();
-            }
+        popup: ({title, msg, icon, buttons}) => {
+            const m = document.getElementById('popup-modal');
+            document.getElementById('pop-title').innerText = title;
+            document.getElementById('pop-msg').innerText = msg;
+            document.getElementById('pop-icon').innerHTML = icon;
+            const b = document.getElementById('pop-btns'); b.innerHTML = '';
+            buttons.forEach(btn => {
+                const el = document.createElement('button'); el.className = `btn-pop ${btn.class||'secondary'}`;
+                el.innerText = btn.text; el.onclick = () => { m.classList.remove('active'); if(btn.cb) btn.cb(); };
+                b.appendChild(el);
+            });
+            m.classList.add('active');
+        },
+        showTyping: (show) => {
+            const el = document.getElementById('typing-ind');
+            el.classList.toggle('show', show);
+            if(show) { clearTimeout(typingTimeout); typingTimeout = setTimeout(() => el.classList.remove('show'), 2000); }
         }
     };
 
+    // --- CORE LOGIC ---
     const core = {
         init: () => {
+            const savedTheme = localStorage.getItem('necxy_theme');
+            if(savedTheme) ui.setTheme(savedTheme, document.querySelector(`.theme-circle[style*="${savedTheme}"]`) || document.querySelector('.theme-circle'));
+
             const id = 'ncx-' + Math.floor(Math.random()*9000 + 1000);
             peer = new Peer(id);
-
             peer.on('open', id => {
                 document.getElementById('my-id').innerText = id;
                 const p = new URLSearchParams(window.location.search);
-                if(p.get('c')) {
-                    document.getElementById('remote-id').value = p.get('c');
-                    ui.view('connect', document.querySelectorAll('.nav-item')[2]);
-                    setTimeout(core.connect, 1000);
-                }
+                if(p.get('c')) { document.getElementById('remote-id').value = p.get('c'); setTimeout(core.connect, 1000); }
             });
 
-            // Handle Incoming Connection
-            peer.on('connection', conn => {
-                core.setupConn(conn);
-            });
+            peer.on('connection', conn => core.setupConn(conn));
             
-            // Handle Incoming Call
             peer.on('call', call => {
+                core.vibrate(500);
                 const isVideo = call.metadata && call.metadata.type === 'video';
-                const answerCall = () => {
-                    navigator.mediaDevices.getUserMedia({video: isVideo, audio: true}).then(stream => {
-                        localStream = stream;
-                        document.getElementById('video-modal').classList.add('active');
-                        document.getElementById('local-video').srcObject = stream;
-                        
-                        call.answer(stream);
-                        core.handleCallStream(call);
-                    });
-                };
-
-                if(document.getElementById('video-modal').classList.contains('active')) {
-                    answerCall();
-                } else if(confirm(`Group ${isVideo ? 'Video' : 'Voice'} Call Incoming. Join?`)) {
-                    answerCall();
-                }
+                ui.popup({
+                    title: isVideo ? 'Video Call' : 'Voice Call',
+                    msg: `Incoming group call...`,
+                    icon: '<i class="fa-solid fa-phone-volume"></i>',
+                    buttons: [
+                        { text: 'Decline', class: 'secondary' },
+                        { text: 'Answer', class: 'primary', cb: () => {
+                            navigator.mediaDevices.getUserMedia({video: isVideo, audio: true}).then(stream => {
+                                localStream = stream;
+                                document.getElementById('video-modal').classList.add('active');
+                                document.getElementById('local-video').srcObject = stream;
+                                call.answer(stream);
+                                core.handleCallStream(call);
+                            });
+                        }}
+                    ]
+                });
             });
+
+            setInterval(() => {
+                Object.values(connections).forEach(c => { if(c.open) c.send({type:'ping', time: Date.now()}); });
+            }, 5000);
         },
 
         connect: () => {
             const id = document.getElementById('remote-id').value.trim();
-            if(!id || connections[id]) return;
+            if(!id || connections[id] || id === peer.id) return;
+            ui.toast("Connecting...", "info");
             const conn = peer.connect(id, { reliable: true });
-            core.setupConn(conn);
-            document.getElementById('remote-id').value = '';
+            const tm = setTimeout(() => { if(!conn.open) ui.popup({title:'Failed', msg:'User offline or ID wrong.', icon:'<i class="fa-solid fa-plug"></i>', buttons:[{text:'OK'}]}); }, 4000);
+            conn.on('open', () => { clearTimeout(tm); core.setupConn(conn); });
+            conn.on('error', () => clearTimeout(tm));
         },
 
         setupConn: (conn) => {
-            conn.on('open', () => {
-                connections[conn.peer] = conn;
-                ui.updateCount();
-                ui.toast("Member Joined!", "success");
-            });
-            conn.on('close', () => {
-                delete connections[conn.peer];
-                core.removeVideo(conn.peer);
-                ui.updateCount();
-            });
-            conn.on('error', () => {
-                delete connections[conn.peer];
-                ui.updateCount();
-            });
+            if(connections[conn.peer]) return;
+            connections[conn.peer] = conn;
+            ui.updateCount();
+            ui.toast("Connected!", "success");
+
+            conn.on('close', () => { delete connections[conn.peer]; ui.updateCount(); });
+            conn.on('error', () => { delete connections[conn.peer]; ui.updateCount(); });
 
             conn.on('data', data => {
-                // CHAT
                 if(data.type === 'chat') {
+                    core.vibrate(50);
                     const box = document.getElementById('chat-box');
-                    const senderName = `<div class="msg-sender">${conn.peer}</div>`;
-                    box.innerHTML += `${senderName}<div class="msg other">${data.val}</div>`;
+                    box.innerHTML += `<div class="msg-sender">${conn.peer}</div><div class="msg other">${data.val}</div>`;
+                    box.scrollTop = box.scrollHeight;
+                    if(!document.getElementById('view-chat').classList.contains('active')) ui.toast(`Msg from ${conn.peer}`);
+                }
+                else if(data.type === 'voice') {
+                    core.vibrate(50);
+                    const box = document.getElementById('chat-box');
+                    box.innerHTML += `<div class="msg-sender">${conn.peer}</div><div class="msg other"><audio controls src="${data.val}"></audio></div>`;
                     box.scrollTop = box.scrollHeight;
                 }
-                // FILE HEADER
-                else if (data.type === 'header') {
+                else if(data.type === 'typing') ui.showTyping(true);
+                else if(data.type === 'ping') conn.send({type:'pong', time: data.time});
+                else if(data.type === 'pong') { pings[conn.peer] = Date.now() - data.time; ui.updateCount(); }
+                else if(data.type === 'header') {
+                    core.vibrate(100);
                     incomingFiles[data.fileId] = { name: data.name, size: data.size, received: 0, chunks: [], from: conn.peer };
-                    ui.logTransfer(data.fileId, data.name, `From: ${conn.peer}`, false);
+                    ui.logTransfer(data.fileId, data.name, `Receiving...`, false);
                 }
-                // FILE CHUNK
-                else if (data.type === 'chunk') {
+                else if(data.type === 'chunk') {
                     const f = incomingFiles[data.fileId];
-                    if(!f) return; // If file was cancelled or doesn't exist
-                    f.chunks.push(data.chunk);
-                    f.received += data.chunk.byteLength;
-                    ui.updateProgress(data.fileId, (f.received / f.size) * 100);
-                    
-                    if(f.received >= f.size) {
-                        const blob = new Blob(f.chunks);
-                        const url = URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.href = url; a.download = f.name; a.click();
-                        delete incomingFiles[data.fileId];
-                        ui.toast(`Received ${f.name}`, "success");
+                    if(f) {
+                        f.chunks.push(data.chunk); f.received += data.chunk.byteLength;
+                        ui.updateProgress(data.fileId, (f.received/f.size)*100);
+                        if(f.received >= f.size) {
+                            core.vibrate([100,50,100]);
+                            const blob = new Blob(f.chunks);
+                            delete incomingFiles[data.fileId];
+                            if(settings.autoSave) {
+                                const url = URL.createObjectURL(blob);
+                                const a = document.createElement('a'); a.href = url; a.download = f.name; a.click();
+                                document.getElementById(`file-${data.fileId}`).querySelector('.status-text').innerText = 'Saved';
+                                ui.toast("File Saved", "success");
+                            } else {
+                                completedDownloads[data.fileId] = blob;
+                                ui.showDL(data.fileId, f.name);
+                                document.getElementById(`file-${data.fileId}`).querySelector('.status-text').innerText = 'Ready';
+                            }
+                        }
                     }
                 }
-                // FILE CANCELLED BY SENDER
                 else if (data.type === 'cancel') {
                     if(incomingFiles[data.fileId]) {
                         delete incomingFiles[data.fileId];
                         ui.markCancelled(data.fileId);
-                        ui.toast("Transfer cancelled by sender", "error");
+                        ui.toast("Transfer cancelled", "error");
                     }
                 }
             });
         },
 
-        // --- BROADCAST LOGIC ---
-
+        // --- MEDIA ---
+        startRec: () => {
+            document.getElementById('mic-btn').classList.add('recording');
+            navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+                mediaRecorder = new MediaRecorder(stream);
+                audioChunks = [];
+                mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+                mediaRecorder.start();
+            });
+        },
+        stopRec: () => {
+            document.getElementById('mic-btn').classList.remove('recording');
+            if(mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+                mediaRecorder.onstop = () => {
+                    const blob = new Blob(audioChunks, { type: 'audio/webm' });
+                    const reader = new FileReader();
+                    reader.onload = () => {
+                        const base64 = reader.result;
+                        Object.values(connections).forEach(c => { if(c.open) c.send({type:'voice', val:base64}); });
+                        const box = document.getElementById('chat-box');
+                        box.innerHTML += `<div class="msg me"><audio controls src="${base64}"></audio></div>`;
+                        box.scrollTop = box.scrollHeight;
+                    };
+                    reader.readAsDataURL(blob);
+                };
+            }
+        },
+        sendTyping: () => { Object.values(connections).forEach(c => { if(c.open) c.send({type:'typing'}); }); },
         sendChat: () => {
             const el = document.getElementById('chat-in');
-            const val = el.value;
-            if(!val) return;
-            
-            Object.values(connections).forEach(conn => {
-                if(conn.open) conn.send({type:'chat', val: val});
-            });
-
-            const box = document.getElementById('chat-box');
-            box.innerHTML += `<div class="msg me">${val}</div>`;
-            box.scrollTop = box.scrollHeight;
+            if(!el.value) return;
+            Object.values(connections).forEach(c => { if(c.open) c.send({type:'chat', val: el.value}); });
+            document.getElementById('chat-box').innerHTML += `<div class="msg me">${el.value}</div>`;
             el.value = '';
         },
 
+        // --- FILES ---
         processFiles: async (files) => {
-            if(Object.keys(connections).length === 0) return ui.toast("No one to send to!", "error");
-            
-            for (const file of files) {
-                const fileId = Math.random().toString(36).substr(2, 9);
-                activeUploads[fileId] = { cancelled: false }; // Track upload state
-                
-                ui.logTransfer(fileId, file.name, 'Sending...', true);
+            if(!Object.keys(connections).length) return ui.popup({title:'Error', msg:'No connections', icon:'!', buttons:[{text:'OK'}]});
+            for(const file of files) {
+                const fid = Math.random().toString(36).substr(2,9);
+                activeUploads[fid] = false; 
+                ui.logTransfer(fid, file.name, 'Sending...', true);
                 
                 const peers = Object.values(connections);
+                peers.forEach(c => c.send({type:'header', fileId:fid, name:file.name, size:file.size}));
                 
-                // 1. Send Header to ALL
-                peers.forEach(conn => {
-                    if(conn.open) conn.send({ type: 'header', fileId, name: file.name, size: file.size });
-                });
-
-                // 2. Send Chunks to ALL
                 let offset = 0;
-                while (offset < file.size) {
-                    // Check Cancellation
-                    if(activeUploads[fileId].cancelled) {
-                        console.log('Upload cancelled');
-                        break;
-                    }
-
-                    const slice = file.slice(offset, offset + CHUNK_SIZE);
-                    const buffer = await slice.arrayBuffer();
-                    
-                    if (peers.length > 2) await new Promise(r => setTimeout(r, 10));
-
-                    peers.forEach(conn => {
-                        if(conn.open) conn.send({ type: 'chunk', fileId, chunk: buffer });
-                    });
-                    
+                while(offset < file.size) {
+                    if(activeUploads[fid]) break; 
+                    const chunk = await file.slice(offset, offset + CHUNK_SIZE).arrayBuffer();
+                    peers.forEach(c => c.send({type:'chunk', fileId:fid, chunk:chunk}));
                     offset += CHUNK_SIZE;
-                    ui.updateProgress(fileId, (offset/file.size)*100);
+                    ui.updateProgress(fid, (offset/file.size)*100);
+                    if(peers.length > 2) await new Promise(r=>setTimeout(r,10));
                 }
-                
-                delete activeUploads[fileId]; // Cleanup
-                if(!document.getElementById(`file-${fileId}`).classList.contains('cancelled')) {
-                    ui.toast("File Sent to Group", "success");
-                }
+                if(!activeUploads[fid]) document.getElementById(`file-${fid}`).querySelector('.status-text').innerText = 'Sent';
             }
         },
-
-        cancelTransfer: (fileId) => {
-            if(activeUploads[fileId]) {
-                activeUploads[fileId].cancelled = true; // Stop loop
-                ui.markCancelled(fileId);
-                // Notify peers to stop waiting
-                Object.values(connections).forEach(conn => {
-                    if(conn.open) conn.send({ type: 'cancel', fileId });
-                });
-                ui.toast("Transfer Cancelled", "error");
-            }
+        cancelTransfer: (fid) => {
+            if(activeUploads[fid] !== undefined) activeUploads[fid] = true; 
+            ui.markCancelled(fid);
+            Object.values(connections).forEach(c => c.send({type:'cancel', fileId:fid}));
+        },
+        dl: (id, name) => {
+             const blob = completedDownloads[id];
+             const url = URL.createObjectURL(blob);
+             const a = document.createElement('a'); a.href = url; a.download = name; a.click();
+             delete completedDownloads[id];
+             document.getElementById(`file-${id}`).querySelector('.manual-dl-area').innerHTML = '';
+             document.getElementById(`file-${id}`).querySelector('.status-text').innerText = 'Saved';
         },
 
-        // --- GROUP CALL LOGIC ---
-
-        startGroupCall: (isVideo) => {
-            const peers = Object.values(connections);
-            if(peers.length === 0) return ui.toast("Add members first!", "error");
-
-            navigator.mediaDevices.getUserMedia({video: isVideo, audio: true}).then(stream => {
+        // --- CALLS ---
+        startGroupCall: (video) => {
+            if(!Object.keys(connections).length) return ui.toast('No peers', 'error');
+            navigator.mediaDevices.getUserMedia({video:video, audio:true}).then(stream => {
                 localStream = stream;
                 document.getElementById('video-modal').classList.add('active');
                 document.getElementById('local-video').srcObject = stream;
-
-                peers.forEach(conn => {
-                    const call = peer.call(conn.peer, stream, {metadata:{type: isVideo ? 'video' : 'audio'}});
+                Object.values(connections).forEach(c => {
+                    const call = peer.call(c.peer, stream, {metadata:{type:video?'video':'audio'}});
                     core.handleCallStream(call);
                 });
             });
         },
-
+        startScreenShare: () => {
+             if(!Object.keys(connections).length) return ui.toast('No peers', 'error');
+             navigator.mediaDevices.getDisplayMedia({ video: true, audio: true }).then(stream => {
+                 localStream = stream;
+                 document.getElementById('video-modal').classList.add('active');
+                 document.getElementById('local-video').srcObject = stream;
+                 Object.values(connections).forEach(c => {
+                     const call = peer.call(c.peer, stream, {metadata:{type:'screen'}});
+                     core.handleCallStream(call);
+                 });
+                 stream.getVideoTracks()[0].onended = () => { core.endGroupCall(); };
+             });
+        },
         handleCallStream: (call) => {
             calls[call.peer] = call;
-            call.on('stream', remoteStream => {
-                core.addVideo(remoteStream, call.peer);
-            });
+            call.on('stream', rs => core.addVideo(rs, call.peer));
             call.on('close', () => core.removeVideo(call.peer));
             call.on('error', () => core.removeVideo(call.peer));
         },
-
         addVideo: (stream, peerId) => {
             if(document.getElementById(`vid-wrap-${peerId}`)) return;
-
             const grid = document.getElementById('video-grid');
             const wrap = document.createElement('div');
             wrap.className = 'vid-wrapper';
             wrap.id = `vid-wrap-${peerId}`;
-            wrap.innerHTML = `
-                <video id="vid-${peerId}" autoplay playsinline></video>
-                <div class="vid-tag">${peerId.substr(0,4)}..</div>
-            `;
+            wrap.innerHTML = `<video id="vid-${peerId}" autoplay playsinline></video><div class="vid-tag">${peerId.substr(0,4)}..</div>`;
             grid.appendChild(wrap);
             document.getElementById(`vid-${peerId}`).srcObject = stream;
         },
-
         removeVideo: (peerId) => {
             const el = document.getElementById(`vid-wrap-${peerId}`);
             if(el) el.remove();
         },
-
         endGroupCall: () => {
             if(localStream) localStream.getTracks().forEach(t=>t.stop());
-            Object.values(calls).forEach(call => call.close());
-            calls = {};
-            document.getElementById('video-grid').innerHTML = `
-                <div class="vid-wrapper" id="local-vid-wrap">
-                    <video id="local-video" autoplay playsinline muted></video>
-                    <div class="vid-tag">You</div>
-                </div>`; 
             document.getElementById('video-modal').classList.remove('active');
+            Object.values(calls).forEach(c => c.close());
+            document.getElementById('video-grid').innerHTML = `<div class="vid-wrapper" id="local-vid-wrap"><video id="local-video" autoplay playsinline muted></video><div class="vid-tag">You</div></div>`;
         },
-
-        toggleMute: () => {
-            if(localStream) {
-                const t = localStream.getAudioTracks()[0];
-                t.enabled = !t.enabled;
-                ui.toast(t.enabled ? "Unmuted" : "Muted");
+        toggleMute: () => { if(localStream) localStream.getAudioTracks()[0].enabled = !localStream.getAudioTracks()[0].enabled; },
+        
+        // --- UTILS ---
+        updateSettings: () => {
+            settings.autoSave = document.getElementById('sw-autosave').classList.contains('active');
+            settings.sound = document.getElementById('sw-sound').classList.contains('active');
+            settings.vibe = document.getElementById('sw-vibe').classList.contains('active');
+        },
+        toggleWakeLock: async (isActive) => {
+            if(isActive) {
+                try { wakeLock = await navigator.wakeLock.request('screen'); ui.toast('Screen kept awake'); }
+                catch(e) { console.log(e); ui.toast('WakeLock Failed', 'error'); }
+            } else {
+                if(wakeLock) { await wakeLock.release(); wakeLock = null; ui.toast('Screen sleep normal'); }
             }
         },
-
-        shareLink: async () => {
-            const id = document.getElementById('my-id').innerText;
-            const url = window.location.href.split('?')[0] + "?c=" + id;
-            if (navigator.share) try { await navigator.share({ title: 'Join NECXY Group', url: url }); } catch(e){}
-            else { navigator.clipboard.writeText(url); ui.toast("Link Copied!"); }
+        updateSysStats: async () => {
+             if(navigator.getBattery) { const b = await navigator.getBattery(); document.getElementById('sys-stat').innerText = `Battery: ${Math.round(b.level*100)}%`; }
         },
-        copy: () => { navigator.clipboard.writeText(document.getElementById('my-id').innerText); ui.toast("ID Copied!"); }
+        clearData: () => { localStorage.clear(); location.reload(); },
+        shareLink: async () => {
+            const url = window.location.href.split('?')[0] + "?c=" + peer.id;
+            if(navigator.share) try{ await navigator.share({title:'Join', url}); }catch(e){}
+            else { navigator.clipboard.writeText(url); ui.toast('Copied!'); }
+        },
+        copy: () => { navigator.clipboard.writeText(peer.id); ui.toast('ID Copied!'); },
+        vibrate: (pattern) => { if(settings.vibe && navigator.vibrate) navigator.vibrate(pattern); },
+        beep: (f, d, t) => { if(settings.sound) { const o = audioCtx.createOscillator(); const g = audioCtx.createGain(); o.type=t; o.frequency.value=f; o.connect(g); g.connect(audioCtx.destination); o.start(); setTimeout(()=>o.stop(), d); } }
     };
 
     core.init();
