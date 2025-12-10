@@ -165,13 +165,16 @@
             display: none; justify-content: center; align-items: center; opacity: 0; transition: opacity 0.3s;
         }
         .modal-overlay.active { display: flex; opacity: 1; }
-        .popup-card { width: 85%; max-width: 320px; background: #111; border: 1px solid #333; border-radius: 20px; padding: 25px; text-align: center; transform: scale(0.9); transition: transform 0.3s; }
+        .popup-card { width: 85%; max-width: 320px; background: #111; border: 1px solid #333; border-radius: 20px; padding: 25px; text-align: center; transform: scale(0.9); transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
         .modal-overlay.active .popup-card { transform: scale(1); }
+        
         .popup-icon { font-size: 2.5rem; margin-bottom: 15px; color: var(--primary); }
-        .popup-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 10px; color: white; }
-        .popup-msg { font-size: 0.9rem; color: #aaa; margin-bottom: 20px; }
-        .popup-btns { display: flex; gap: 10px; justify-content: center; }
-        .btn-pop { flex: 1; padding: 12px; border-radius: 10px; border: none; font-weight: 600; cursor: pointer; }
+        .popup-title { font-size: 1.2rem; font-weight: 700; margin-bottom: 10px; color: white; text-transform: uppercase; letter-spacing: 1px; }
+        .popup-msg { font-size: 0.95rem; color: #bbb; margin-bottom: 25px; line-height: 1.5; }
+        
+        .popup-btns { display: flex; gap: 12px; justify-content: center; }
+        .btn-pop { flex: 1; padding: 14px; border-radius: 12px; border: none; font-weight: 600; cursor: pointer; font-size: 0.9rem; transition: 0.2s; }
+        .btn-pop:active { transform: scale(0.96); }
         .btn-pop.primary { background: var(--primary); color: white; }
         .btn-pop.secondary { background: rgba(255,255,255,0.1); color: #fff; }
 
@@ -607,7 +610,6 @@
                 const type = call.metadata ? call.metadata.type : 'audio';
                 const isVideo = type === 'video' || type === 'screen';
                 
-                // FIXED: Better label for screen share
                 let title = 'Voice Call';
                 let icon = '<i class="fa-solid fa-phone-volume"></i>';
                 if(type === 'video') { title = 'Video Call'; icon = '<i class="fa-solid fa-video"></i>'; }
@@ -620,7 +622,6 @@
                     buttons: [
                         { text: 'Decline', class: 'secondary' },
                         { text: 'Answer', class: 'primary', cb: () => {
-                            // If screen share, answer with audio only so we can talk
                             navigator.mediaDevices.getUserMedia({video: type === 'video', audio: true}).then(stream => {
                                 localStream = stream;
                                 document.getElementById('video-modal').classList.add('active');
@@ -628,8 +629,7 @@
                                 call.answer(stream);
                                 core.handleCallStream(call);
                             }).catch(err => {
-                                // Fallback if no cam/mic (e.g. just watching screen)
-                                call.answer();
+                                call.answer(); // Answer even without local stream (for viewing screen share)
                                 core.handleCallStream(call);
                             });
                         }}
@@ -802,25 +802,36 @@
                 });
             });
         },
+        
+        // --- SCREEN SHARE WITH CONFIRMATION POPUP ---
         startScreenShare: () => {
              if(!Object.keys(connections).length) return ui.toast('No peers', 'error');
-             // Try to get display media
-             if(!navigator.mediaDevices.getDisplayMedia) return ui.popup({title:'Error', msg:'Screen share not supported on this device/browser.', icon:'!', buttons:[{text:'OK'}]});
+             if(!navigator.mediaDevices.getDisplayMedia) return ui.popup({title:'Error', msg:'Not supported on this device.', icon:'<i class="fa-solid fa-ban"></i>', buttons:[{text:'OK'}]});
 
-             navigator.mediaDevices.getDisplayMedia({ video: true, audio: true }).then(stream => {
-                 localStream = stream;
-                 document.getElementById('video-modal').classList.add('active');
-                 document.getElementById('local-video').srcObject = stream;
-                 Object.values(connections).forEach(c => {
-                     const call = peer.call(c.peer, stream, {metadata:{type:'screen'}});
-                     core.handleCallStream(call);
-                 });
-                 stream.getVideoTracks()[0].onended = () => { core.endGroupCall(); };
-             }).catch(err => ui.toast('Screen share cancelled', 'error'));
+             ui.popup({
+                 title: 'Start Screen Share?',
+                 msg: 'Everything on your screen will be visible to everyone in the group.',
+                 icon: '<i class="fa-solid fa-desktop"></i>',
+                 buttons: [
+                     { text: 'Cancel', class: 'secondary' },
+                     { text: 'Start Now', class: 'primary', cb: () => {
+                         navigator.mediaDevices.getDisplayMedia({ video: true, audio: true }).then(stream => {
+                             localStream = stream;
+                             document.getElementById('video-modal').classList.add('active');
+                             document.getElementById('local-video').srcObject = stream;
+                             Object.values(connections).forEach(c => {
+                                 const call = peer.call(c.peer, stream, {metadata:{type:'screen'}});
+                                 core.handleCallStream(call);
+                             });
+                             stream.getVideoTracks()[0].onended = () => { core.endGroupCall(); };
+                         }).catch(err => ui.toast('Screen share cancelled', 'error'));
+                     }}
+                 ]
+             });
         },
+
         handleCallStream: (call) => {
             calls[call.peer] = call;
-            // FIXED: If video element exists, update source instead of creating new
             call.on('stream', rs => core.addVideo(rs, call.peer));
             call.on('close', () => core.removeVideo(call.peer));
             call.on('error', () => core.removeVideo(call.peer));
@@ -828,10 +839,8 @@
         addVideo: (stream, peerId) => {
             let vid = document.getElementById(`vid-${peerId}`);
             if(vid) {
-                // Update existing
                 vid.srcObject = stream;
             } else {
-                // Create new
                 const grid = document.getElementById('video-grid');
                 const wrap = document.createElement('div');
                 wrap.className = 'vid-wrapper';
