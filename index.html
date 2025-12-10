@@ -5,10 +5,33 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>NECXY Group Ultra</title>
     
+    <meta name="theme-color" content="#050505">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" id="manifest-placeholder">
+
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     
+    <script>
+        const manifest = {
+            "name": "NECXY Ultra",
+            "short_name": "NECXY",
+            "start_url": ".",
+            "display": "standalone",
+            "background_color": "#050505",
+            "theme_color": "#FF2E2E",
+            "orientation": "portrait",
+            "icons": [
+                { "src": "https://img.icons8.com/color/512/share-3.png", "sizes": "192x192", "type": "image/png" },
+                { "src": "https://img.icons8.com/color/512/share-3.png", "sizes": "512x512", "type": "image/png" }
+            ]
+        };
+        const blob = new Blob([JSON.stringify(manifest)], {type: 'application/json'});
+        document.querySelector('#manifest-placeholder').setAttribute('href', URL.createObjectURL(blob));
+    </script>
+
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
@@ -215,7 +238,7 @@
         }
         .btn-danger:active { background: rgba(255, 46, 46, 0.2); transform: scale(0.98); }
 
-        /* VIDEO CALL - PICTURE IN PICTURE LAYOUT */
+        /* VIDEO CALL - PiP */
         .video-grid {
             flex: 1; width: 100%; padding: 0; position: relative;
             display: flex; justify-content: center; align-items: center;
@@ -658,6 +681,13 @@
                 if(p.get('c')) { document.getElementById('remote-id').value = p.get('c'); setTimeout(core.connect, 1000); }
             });
 
+            // PREVENT ACCIDENTAL CLOSING
+            window.onbeforeunload = function() {
+                if (Object.keys(activeTransfers).length > 0) {
+                    return "Transfer in progress. Are you sure you want to leave?";
+                }
+            };
+
             peer.on('connection', conn => core.setupConn(conn));
             
             peer.on('call', call => {
@@ -736,7 +766,6 @@
                 else if(data.type === 'ping') conn.send({type:'pong', time: data.time});
                 else if(data.type === 'pong') { pings[conn.peer] = Date.now() - data.time; ui.updateCount(); }
                 else if(data.type === 'header') {
-                    // AUTO WAKE LOCK ON RECEIVE
                     core.toggleWakeLock(true);
                     core.vibrate(100);
                     activeTransfers[data.fileId] = { cancelled: false, type: 'receive' };
@@ -751,7 +780,7 @@
                         f.chunks.push(data.chunk); f.received += data.chunk.byteLength;
                         ui.updateProgress(data.fileId, f.received, f.size);
                         if(f.received >= f.size) {
-                            core.toggleWakeLock(false); // Transfer done, release lock
+                            core.toggleWakeLock(false);
                             core.vibrate([100,50,100]);
                             const blob = new Blob(f.chunks);
                             delete incomingFiles[data.fileId];
@@ -770,7 +799,7 @@
                     }
                 }
                 else if (data.type === 'cancel') {
-                    core.toggleWakeLock(false); // Stop wake lock if cancelled
+                    core.toggleWakeLock(false);
                     if(activeTransfers[data.fileId]) activeTransfers[data.fileId].cancelled = true;
                     if(incomingFiles[data.fileId]) delete incomingFiles[data.fileId];
                     ui.markCancelled(data.fileId);
@@ -820,7 +849,6 @@
         processFiles: async (files) => {
             if(!Object.keys(connections).length) return ui.popup({title:'Error', msg:'No connections', icon:'!', buttons:[{text:'OK'}]});
             
-            // AUTO WAKE LOCK ON SEND
             core.toggleWakeLock(true);
 
             for(const file of files) {
@@ -851,7 +879,7 @@
                 }
                 delete activeTransfers[fid]; 
             }
-            core.toggleWakeLock(false); // Release lock
+            core.toggleWakeLock(false);
         },
         cancelTransfer: (fid) => {
             if(activeTransfers[fid]) activeTransfers[fid].cancelled = true; 
